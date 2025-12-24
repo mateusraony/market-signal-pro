@@ -1,16 +1,13 @@
 import { ReactNode } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { 
   Activity, 
   Bell, 
   History, 
   Settings, 
-  LogOut,
   PauseCircle,
   PlayCircle,
-  Menu,
-  X
+  Menu
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -32,7 +29,6 @@ export function DashboardLayout({
   onResumeAll,
   isPanicMode = false
 }: DashboardLayoutProps) {
-  const { user, signOut } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const navItems = [
@@ -118,29 +114,11 @@ export function DashboardLayout({
             </Button>
           </div>
 
-          {/* User section */}
+          {/* Footer */}
           <div className="p-4 border-t border-sidebar-border">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                <span className="text-xs font-medium text-primary">
-                  {user?.email?.charAt(0).toUpperCase()}
-                </span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-sidebar-foreground truncate">
-                  {user?.email}
-                </p>
-              </div>
-            </div>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="w-full justify-start gap-2 text-muted-foreground hover:text-destructive"
-              onClick={() => signOut()}
-            >
-              <LogOut className="w-4 h-4" />
-              Sair
-            </Button>
+            <p className="text-xs text-muted-foreground text-center">
+              Horários em BRT (UTC-3)
+            </p>
           </div>
         </div>
       </aside>

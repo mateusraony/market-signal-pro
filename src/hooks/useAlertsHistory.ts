@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
 import { AlertHistory, AlertType, AlertTimeframe } from '@/types/alerts';
 
 interface HistoryFilters {
@@ -13,17 +12,12 @@ interface HistoryFilters {
 }
 
 export function useAlertsHistory(filters?: HistoryFilters) {
-  const { user } = useAuth();
-
   return useQuery({
-    queryKey: ['alerts-history', user?.id, filters],
+    queryKey: ['alerts-history', filters],
     queryFn: async () => {
-      if (!user) return [];
-      
       let query = supabase
         .from('alerts_history')
         .select('*')
-        .eq('user_id', user.id)
         .order('event_time_utc', { ascending: false });
       
       if (filters?.symbol) {
@@ -65,6 +59,5 @@ export function useAlertsHistory(filters?: HistoryFilters) {
         prob_down: item.prob_down ? Number(item.prob_down) : null,
       })) as AlertHistory[];
     },
-    enabled: !!user,
   });
 }
