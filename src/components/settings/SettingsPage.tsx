@@ -1,15 +1,12 @@
 import { useProfile } from '@/hooks/useProfile';
-import { useAuth } from '@/contexts/AuthContext';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { Settings, User, MessageCircle, Clock, Loader2 } from 'lucide-react';
+import { Settings, MessageCircle, Clock, Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 export function SettingsPage() {
-  const { user } = useAuth();
   const { profile, isLoading, updateProfile } = useProfile();
   
   const [telegramId, setTelegramId] = useState('');
@@ -52,32 +49,9 @@ export function SettingsPage() {
           Configurações
         </h1>
         <p className="text-muted-foreground mt-1">
-          Gerencie sua conta e preferências
+          Gerencie suas preferências
         </p>
       </div>
-
-      {/* Account Info */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User className="w-5 h-5" />
-            Conta
-          </CardTitle>
-          <CardDescription>
-            Informações da sua conta
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label>Email</Label>
-            <Input value={user?.email || ''} disabled className="bg-muted" />
-          </div>
-          <div className="space-y-2">
-            <Label>ID do Usuário</Label>
-            <Input value={user?.id || ''} disabled className="bg-muted font-mono text-xs" />
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Telegram Integration */}
       <Card>

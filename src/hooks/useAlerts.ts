@@ -1,22 +1,21 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
 import { Alert, AlertType, AlertTimeframe, TriggerMode, AlertParams } from '@/types/alerts';
 import { toast } from 'sonner';
 import { Json } from '@/integrations/supabase/types';
 
+// Fixed user ID for single-user app (will be used by Telegram bot later)
+const DEFAULT_USER_ID = '00000000-0000-0000-0000-000000000001';
+
 export function useAlerts() {
-  const { user } = useAuth();
   const queryClient = useQueryClient();
 
   const alertsQuery = useQuery({
-    queryKey: ['alerts', user?.id],
+    queryKey: ['alerts'],
     queryFn: async () => {
-      if (!user) return [];
       const { data, error } = await supabase
         .from('alerts')
         .select('*')
-        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
@@ -25,7 +24,6 @@ export function useAlerts() {
         params: item.params as unknown as AlertParams,
       })) as Alert[];
     },
-    enabled: !!user,
   });
 
   const createAlert = useMutation({
@@ -37,12 +35,10 @@ export function useAlerts() {
       params: AlertParams;
       mode: TriggerMode;
     }) => {
-      if (!user) throw new Error('Not authenticated');
-      
       const { data, error } = await supabase
         .from('alerts')
         .insert({
-          user_id: user.id,
+          user_id: DEFAULT_USER_ID,
           symbol: alert.symbol.toUpperCase(),
           exchange: alert.exchange.toLowerCase(),
           type: alert.type,
@@ -129,11 +125,9 @@ export function useAlerts() {
 
   const pauseAll = useMutation({
     mutationFn: async () => {
-      if (!user) throw new Error('Not authenticated');
       const { error } = await supabase
         .from('alerts')
         .update({ paused: true })
-        .eq('user_id', user.id)
         .eq('active', true);
       
       if (error) throw error;
@@ -149,11 +143,9 @@ export function useAlerts() {
 
   const resumeAll = useMutation({
     mutationFn: async () => {
-      if (!user) throw new Error('Not authenticated');
       const { error } = await supabase
         .from('alerts')
         .update({ paused: false })
-        .eq('user_id', user.id)
         .eq('active', true);
       
       if (error) throw error;
