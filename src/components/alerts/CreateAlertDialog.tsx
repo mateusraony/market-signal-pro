@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, DollarSign, TrendingUp, BarChart3 } from 'lucide-react';
+import { Plus, DollarSign, TrendingUp, BarChart3, Volume2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface CreateAlertDialogProps {
@@ -63,6 +63,10 @@ export function CreateAlertDialog({ trigger }: CreateAlertDialogProps) {
   
   // MACD params
   const [macdMode, setMacdMode] = useState<'signal_cross' | 'zero_cross'>('signal_cross');
+  
+  // Volume params
+  const [volumeThreshold, setVolumeThreshold] = useState('200');
+  const [volumePeriod, setVolumePeriod] = useState('20');
 
   const resetForm = () => {
     setStep('type');
@@ -76,6 +80,8 @@ export function CreateAlertDialog({ trigger }: CreateAlertDialogProps) {
     setRsiLevel('30');
     setRsiMode('crossing');
     setMacdMode('signal_cross');
+    setVolumeThreshold('200');
+    setVolumePeriod('20');
   };
 
   const handleCreate = async () => {
@@ -96,6 +102,11 @@ export function CreateAlertDialog({ trigger }: CreateAlertDialogProps) {
     } else if (alertType === 'macd_cross') {
       params = {
         macd_mode: macdMode,
+      };
+    } else if (alertType === 'volume_spike') {
+      params = {
+        volume_threshold: parseFloat(volumeThreshold),
+        volume_period: parseInt(volumePeriod),
       };
     }
 
@@ -133,6 +144,13 @@ export function CreateAlertDialog({ trigger }: CreateAlertDialogProps) {
       title: 'Alerta de MACD',
       description: 'Notifica em cruzamentos do MACD',
       color: 'text-success bg-success/10 border-success/20',
+    },
+    {
+      type: 'volume_spike' as const,
+      icon: Volume2,
+      title: 'Alerta de Volume',
+      description: 'Notifica quando volume anormal for detectado',
+      color: 'text-purple-500 bg-purple-500/10 border-purple-500/20',
     },
   ];
 
@@ -408,7 +426,57 @@ export function CreateAlertDialog({ trigger }: CreateAlertDialogProps) {
               </div>
             )}
 
-            {/* Mode */}
+            {alertType === 'volume_spike' && (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Limiar de Volume (%)</Label>
+                  <div className="flex gap-2">
+                    {['150', '200', '300'].map((level) => (
+                      <Button
+                        key={level}
+                        type="button"
+                        variant={volumeThreshold === level ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setVolumeThreshold(level)}
+                      >
+                        {level}%
+                      </Button>
+                    ))}
+                    <Input
+                      type="number"
+                      placeholder="Custom"
+                      value={!['150', '200', '300'].includes(volumeThreshold) ? volumeThreshold : ''}
+                      onChange={(e) => setVolumeThreshold(e.target.value)}
+                      className="flex-1 font-mono"
+                      min="100"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Alerta dispara quando o volume for X% acima da média
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label>Período de Média (candles)</Label>
+                  <div className="flex gap-2">
+                    {['10', '20', '50'].map((period) => (
+                      <Button
+                        key={period}
+                        type="button"
+                        variant={volumePeriod === period ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setVolumePeriod(period)}
+                      >
+                        {period}
+                      </Button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Número de candles para calcular o volume médio
+                  </p>
+                </div>
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label>Comportamento</Label>
               <Select value={mode} onValueChange={(v) => setMode(v as TriggerMode)}>

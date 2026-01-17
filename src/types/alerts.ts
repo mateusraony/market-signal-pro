@@ -1,4 +1,4 @@
-export type AlertType = 'price_level' | 'rsi_level' | 'macd_cross';
+export type AlertType = 'price_level' | 'rsi_level' | 'macd_cross' | 'volume_spike';
 export type AlertTimeframe = '4h' | '1d' | '1w' | '1m';
 export type TriggerMode = 'once' | 'every_touch' | 'crossing' | 'touch';
 export type PriceDirection = 'above' | 'below' | 'cross';
@@ -14,6 +14,10 @@ export interface AlertParams {
   
   // MACD params
   macd_mode?: 'signal_cross' | 'zero_cross';
+  
+  // Volume params
+  volume_threshold?: number; // percentage above average (e.g., 200 = 200% above avg)
+  volume_period?: number; // number of candles to calculate average
 }
 
 export interface Alert {
@@ -31,6 +35,8 @@ export interface Alert {
   cooldown_until: string | null;
   created_at: string;
   updated_at: string;
+  tags?: string[];
+  priority?: number;
 }
 
 export interface AlertHistory {
@@ -87,6 +93,7 @@ export function formatAlertType(type: AlertType): string {
     'price_level': 'Preço',
     'rsi_level': 'RSI',
     'macd_cross': 'MACD',
+    'volume_spike': 'Volume',
   };
   return map[type];
 }
@@ -96,6 +103,7 @@ export function getAlertTypeColor(type: AlertType): string {
     'price_level': 'text-primary',
     'rsi_level': 'text-warning',
     'macd_cross': 'text-success',
+    'volume_spike': 'text-purple-500',
   };
   return map[type];
 }

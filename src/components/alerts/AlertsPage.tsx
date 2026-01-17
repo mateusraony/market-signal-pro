@@ -63,7 +63,7 @@ export function AlertsPage() {
             Alertas
           </h1>
           <p className="text-muted-foreground mt-1">
-            Gerencie seus alertas de preço, RSI e MACD
+            Gerencie seus alertas de preço, RSI, MACD e Volume
           </p>
         </div>
         <CreateAlertDialog />
@@ -106,6 +106,7 @@ export function AlertsPage() {
             <SelectItem value="price_level">Preço</SelectItem>
             <SelectItem value="rsi_level">RSI</SelectItem>
             <SelectItem value="macd_cross">MACD</SelectItem>
+            <SelectItem value="volume_spike">Volume</SelectItem>
           </SelectContent>
         </Select>
         <Select value={filterStatus} onValueChange={setFilterStatus}>
