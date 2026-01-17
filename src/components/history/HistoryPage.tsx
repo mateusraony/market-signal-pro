@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { useAlertsHistory } from '@/hooks/useAlertsHistory';
 import { AlertHistory, AlertType, AlertTimeframe, formatAlertType, formatTimeframe } from '@/types/alerts';
 import { formatToBRT, formatRelativeTime, formatPrice, formatRSI, getRSIColor, getDirectionColor } from '@/lib/format';
+import { exportHistoryToCSV } from '@/lib/exportCSV';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Select,
   SelectContent,
@@ -30,9 +31,11 @@ import {
   Clock,
   AlertTriangle,
   Loader2,
-  ExternalLink
+  ExternalLink,
+  Download
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 export function HistoryPage() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -51,6 +54,15 @@ export function HistoryPage() {
     return null;
   };
 
+  const handleExportCSV = () => {
+    if (!history || history.length === 0) {
+      toast.error('Nenhum dado para exportar');
+      return;
+    }
+    exportHistoryToCSV(history);
+    toast.success('Arquivo CSV exportado com sucesso!');
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -62,14 +74,24 @@ export function HistoryPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold flex items-center gap-3">
-          <History className="w-6 h-6 text-primary" />
-          Histórico de Alertas
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          Visualize todos os alertas disparados
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-3">
+            <History className="w-6 h-6 text-primary" />
+            Histórico de Alertas
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Visualize todos os alertas disparados
+          </p>
+        </div>
+        <Button 
+          variant="outline" 
+          onClick={handleExportCSV}
+          disabled={!history || history.length === 0}
+        >
+          <Download className="w-4 h-4 mr-2" />
+          Exportar CSV
+        </Button>
       </div>
 
       {/* Stats */}
@@ -127,6 +149,7 @@ export function HistoryPage() {
             <SelectItem value="price_level">Preço</SelectItem>
             <SelectItem value="rsi_level">RSI</SelectItem>
             <SelectItem value="macd_cross">MACD</SelectItem>
+            <SelectItem value="volume_spike">Volume</SelectItem>
           </SelectContent>
         </Select>
         <Select value={filterTimeframe} onValueChange={setFilterTimeframe}>
@@ -187,6 +210,7 @@ export function HistoryPage() {
                       item.type === 'price_level' && 'text-primary border-primary/30',
                       item.type === 'rsi_level' && 'text-warning border-warning/30',
                       item.type === 'macd_cross' && 'text-success border-success/30',
+                      item.type === 'volume_spike' && 'text-purple-500 border-purple-500/30',
                     )}>
                       {formatAlertType(item.type)}
                     </Badge>

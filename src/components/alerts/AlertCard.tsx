@@ -11,7 +11,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { 
   TrendingUp, 
-  TrendingDown, 
   BarChart3, 
   DollarSign,
   MoreVertical,
@@ -19,9 +18,11 @@ import {
   Play,
   Trash2,
   Edit,
-  ExternalLink
+  ExternalLink,
+  Volume2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useLivePrice } from '@/hooks/useLivePrices';
 
 interface AlertCardProps {
   alert: Alert;
@@ -31,6 +32,8 @@ interface AlertCardProps {
 }
 
 export function AlertCard({ alert, onTogglePause, onDelete, onEdit }: AlertCardProps) {
+  const livePrice = useLivePrice(alert.symbol);
+
   const getTypeIcon = () => {
     switch (alert.type) {
       case 'price_level':
@@ -39,6 +42,8 @@ export function AlertCard({ alert, onTogglePause, onDelete, onEdit }: AlertCardP
         return <TrendingUp className="w-5 h-5" />;
       case 'macd_cross':
         return <BarChart3 className="w-5 h-5" />;
+      case 'volume_spike':
+        return <Volume2 className="w-5 h-5" />;
     }
   };
 
@@ -55,6 +60,8 @@ export function AlertCard({ alert, onTogglePause, onDelete, onEdit }: AlertCardP
         return alert.params.macd_mode === 'zero_cross' 
           ? 'MACD cruzar linha zero' 
           : 'MACD cruzar Signal';
+      case 'volume_spike':
+        return `Volume > ${alert.params.volume_threshold ?? 200}% da média`;
     }
   };
 
@@ -73,7 +80,8 @@ export function AlertCard({ alert, onTogglePause, onDelete, onEdit }: AlertCardP
               "w-10 h-10 rounded-lg flex items-center justify-center",
               alert.type === 'price_level' && "bg-primary/10 text-primary",
               alert.type === 'rsi_level' && "bg-warning/10 text-warning",
-              alert.type === 'macd_cross' && "bg-success/10 text-success"
+              alert.type === 'macd_cross' && "bg-success/10 text-success",
+              alert.type === 'volume_spike' && "bg-purple-500/10 text-purple-500"
             )}>
               {getTypeIcon()}
             </div>
@@ -146,6 +154,27 @@ export function AlertCard({ alert, onTogglePause, onDelete, onEdit }: AlertCardP
       </CardHeader>
 
       <CardContent className="space-y-3">
+        {/* Live Price */}
+        {livePrice && (
+          <div className="flex items-center justify-between p-2 rounded-lg bg-muted/30">
+            <span className="text-sm text-muted-foreground">Preço atual:</span>
+            <div className="flex items-center gap-2">
+              <span className="font-mono font-bold">{formatPrice(livePrice.price)}</span>
+              <Badge 
+                variant="outline" 
+                className={cn(
+                  "text-xs font-mono",
+                  livePrice.change24h >= 0 
+                    ? "text-success border-success/30" 
+                    : "text-destructive border-destructive/30"
+                )}
+              >
+                {livePrice.change24h >= 0 ? '+' : ''}{livePrice.change24h.toFixed(2)}%
+              </Badge>
+            </div>
+          </div>
+        )}
+
         {/* Alert condition */}
         <div className="p-3 rounded-lg bg-muted/50">
           <p className={cn("font-medium", getAlertTypeColor(alert.type))}>
@@ -157,6 +186,17 @@ export function AlertCard({ alert, onTogglePause, onDelete, onEdit }: AlertCardP
             </p>
           )}
         </div>
+
+        {/* Tags */}
+        {alert.tags && alert.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {alert.tags.map((tag, index) => (
+              <Badge key={index} variant="secondary" className="text-xs">
+                {tag}
+              </Badge>
+            ))}
+          </div>
+        )}
 
         {/* Metadata */}
         <div className="flex items-center justify-between text-xs text-muted-foreground">

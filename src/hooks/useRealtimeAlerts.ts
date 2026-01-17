@@ -3,9 +3,11 @@ import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { formatAlertType, formatTimeframe } from '@/types/alerts';
+import { useNotificationSound } from './useNotificationSound';
 
 export function useRealtimeAlerts() {
   const queryClient = useQueryClient();
+  const { playAlertSound } = useNotificationSound();
 
   useEffect(() => {
     const channel = supabase
@@ -19,6 +21,9 @@ export function useRealtimeAlerts() {
         },
         (payload) => {
           const newAlert = payload.new as any;
+          
+          // Play notification sound
+          playAlertSound();
           
           // Show popup notification
           const direction = newAlert.direction_guess === 'up' ? '📈 ALTA' : 
@@ -50,5 +55,5 @@ export function useRealtimeAlerts() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [queryClient]);
+  }, [queryClient, playAlertSound]);
 }

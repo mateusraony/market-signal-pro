@@ -25,7 +25,9 @@ export type Database = {
           mode: Database["public"]["Enums"]["trigger_mode"]
           params: Json
           paused: boolean
+          priority: number | null
           symbol: string
+          tags: string[] | null
           timeframe: Database["public"]["Enums"]["alert_timeframe"] | null
           type: Database["public"]["Enums"]["alert_type"]
           updated_at: string
@@ -41,7 +43,9 @@ export type Database = {
           mode?: Database["public"]["Enums"]["trigger_mode"]
           params?: Json
           paused?: boolean
+          priority?: number | null
           symbol: string
+          tags?: string[] | null
           timeframe?: Database["public"]["Enums"]["alert_timeframe"] | null
           type: Database["public"]["Enums"]["alert_type"]
           updated_at?: string
@@ -57,7 +61,9 @@ export type Database = {
           mode?: Database["public"]["Enums"]["trigger_mode"]
           params?: Json
           paused?: boolean
+          priority?: number | null
           symbol?: string
+          tags?: string[] | null
           timeframe?: Database["public"]["Enums"]["alert_timeframe"] | null
           type?: Database["public"]["Enums"]["alert_type"]
           updated_at?: string
@@ -220,7 +226,7 @@ export type Database = {
     }
     Enums: {
       alert_timeframe: "4h" | "1d" | "1w" | "1m"
-      alert_type: "price_level" | "rsi_level" | "macd_cross"
+      alert_type: "price_level" | "rsi_level" | "macd_cross" | "volume_spike"
       price_direction: "above" | "below" | "cross"
       trigger_mode: "once" | "every_touch" | "crossing" | "touch"
     }
@@ -351,7 +357,7 @@ export const Constants = {
   public: {
     Enums: {
       alert_timeframe: ["4h", "1d", "1w", "1m"],
-      alert_type: ["price_level", "rsi_level", "macd_cross"],
+      alert_type: ["price_level", "rsi_level", "macd_cross", "volume_spike"],
       price_direction: ["above", "below", "cross"],
       trigger_mode: ["once", "every_touch", "crossing", "touch"],
     },
