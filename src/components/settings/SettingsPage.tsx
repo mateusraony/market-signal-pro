@@ -1,13 +1,17 @@
 import { useProfile } from '@/hooks/useProfile';
+import { useNotificationSound } from '@/hooks/useNotificationSound';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Settings, MessageCircle, Clock, Loader2 } from 'lucide-react';
+import { Settings, MessageCircle, Clock, Loader2, Volume2, Bell } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { SystemStatus } from './SystemStatus';
+import { toast } from 'sonner';
 
 export function SettingsPage() {
   const { profile, isLoading, updateProfile } = useProfile();
+  const { playAlertSound, playSuccessSound, playWarningSound, playErrorSound } = useNotificationSound();
   
   const [telegramId, setTelegramId] = useState('');
   const [telegramUsername, setTelegramUsername] = useState('');
@@ -32,6 +36,43 @@ export function SettingsPage() {
     });
   };
 
+  const testTelegramNotification = async () => {
+    if (!telegramId) {
+      toast.error('Configure seu Telegram ID primeiro');
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-telegram`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({
+            chatId: telegramId,
+            rawMessage: '🔔 *Teste de Notificação*\n\nSeu sistema de alertas está configurado corretamente!\n\n✅ Você receberá alertas neste chat.',
+          }),
+        }
+      );
+
+      const result = await response.json();
+      
+      if (result.success) {
+        toast.success('Notificação de teste enviada!');
+        playSuccessSound();
+      } else {
+        toast.error('Falha ao enviar notificação');
+        playErrorSound();
+      }
+    } catch (error) {
+      toast.error('Erro ao enviar notificação');
+      playErrorSound();
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -49,9 +90,61 @@ export function SettingsPage() {
           Configurações
         </h1>
         <p className="text-muted-foreground mt-1">
-          Gerencie suas preferências
+          Gerencie suas preferências e integrações
         </p>
       </div>
+
+      {/* System Status */}
+      <SystemStatus />
+
+      {/* Sound Test */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Volume2 className="w-5 h-5" />
+            Sons de Notificação
+          </CardTitle>
+          <CardDescription>
+            Teste os sons que serão reproduzidos quando alertas forem disparados
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => { playAlertSound(); toast.info('Som de alerta'); }}
+            >
+              <Bell className="w-4 h-4 mr-2" />
+              Alerta
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => { playSuccessSound(); toast.success('Sucesso!'); }}
+              className="text-success border-success/30"
+            >
+              Sucesso
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => { playWarningSound(); toast.warning('Atenção!'); }}
+              className="text-warning border-warning/30"
+            >
+              Aviso
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => { playErrorSound(); toast.error('Erro!'); }}
+              className="text-destructive border-destructive/30"
+            >
+              Erro
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Telegram Integration */}
       <Card>
@@ -68,10 +161,10 @@ export function SettingsPage() {
           <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
             <h4 className="font-medium text-sm mb-2">Como configurar:</h4>
             <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
-              <li>Inicie uma conversa com o bot no Telegram</li>
+              <li>Procure pelo bot <code className="bg-muted px-1 rounded">@SeuBotDeAlertas</code> no Telegram</li>
               <li>Envie o comando <code className="bg-muted px-1 rounded">/start</code></li>
               <li>O bot vai informar seu Telegram ID</li>
-              <li>Cole o ID no campo abaixo</li>
+              <li>Cole o ID no campo abaixo e teste</li>
             </ol>
           </div>
           
@@ -95,6 +188,16 @@ export function SettingsPage() {
               onChange={(e) => setTelegramUsername(e.target.value)}
             />
           </div>
+
+          <Button 
+            variant="outline" 
+            className="w-full"
+            onClick={testTelegramNotification}
+            disabled={!telegramId}
+          >
+            <MessageCircle className="w-4 h-4 mr-2" />
+            Enviar Notificação de Teste
+          </Button>
         </CardContent>
       </Card>
 
