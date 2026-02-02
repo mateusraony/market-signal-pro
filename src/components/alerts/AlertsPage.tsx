@@ -2,6 +2,7 @@ import { useAlerts } from '@/hooks/useAlerts';
 import { Alert } from '@/types/alerts';
 import { AlertCard } from './AlertCard';
 import { CreateAlertDialog } from './CreateAlertDialog';
+import { EditAlertDialog } from './EditAlertDialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -11,15 +12,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Bell, Search, Filter, Plus, Loader2 } from 'lucide-react';
+import { Bell, Search, Filter, Plus, Loader2, PauseCircle, PlayCircle } from 'lucide-react';
 import { useState } from 'react';
-import { toast } from 'sonner';
 
 export function AlertsPage() {
-  const { alerts, isLoading, togglePause, deleteAlert } = useAlerts();
+  const { alerts, isLoading, togglePause, deleteAlert, pauseAll, resumeAll } = useAlerts();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [editingAlert, setEditingAlert] = useState<Alert | null>(null);
 
   const filteredAlerts = alerts.filter((alert) => {
     const matchesSearch = alert.symbol.toLowerCase().includes(searchTerm.toLowerCase());
@@ -37,7 +38,7 @@ export function AlertsPage() {
   };
 
   const handleEdit = (alert: Alert) => {
-    toast.info('Edição em desenvolvimento');
+    setEditingAlert(alert);
   };
 
   // Stats
@@ -66,7 +67,33 @@ export function AlertsPage() {
             Gerencie seus alertas de preço, RSI, MACD e Volume
           </p>
         </div>
-        <CreateAlertDialog />
+        <div className="flex gap-2">
+          {activeCount > 0 && (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => pauseAll.mutate()}
+              disabled={pauseAll.isPending}
+              className="text-warning border-warning/30"
+            >
+              <PauseCircle className="w-4 h-4 mr-2" />
+              Pausar Todos
+            </Button>
+          )}
+          {pausedCount > 0 && (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => resumeAll.mutate()}
+              disabled={resumeAll.isPending}
+              className="text-success border-success/30"
+            >
+              <PlayCircle className="w-4 h-4 mr-2" />
+              Retomar Todos
+            </Button>
+          )}
+          <CreateAlertDialog />
+        </div>
       </div>
 
       {/* Stats */}
@@ -157,6 +184,13 @@ export function AlertsPage() {
           ))}
         </div>
       )}
+
+      {/* Edit Dialog */}
+      <EditAlertDialog 
+        alert={editingAlert}
+        open={!!editingAlert}
+        onOpenChange={(open) => !open && setEditingAlert(null)}
+      />
     </div>
   );
 }
