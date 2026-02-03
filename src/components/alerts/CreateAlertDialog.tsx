@@ -36,7 +36,7 @@ export function CreateAlertDialog({ trigger }: CreateAlertDialogProps) {
   
   // Form state
   const [symbol, setSymbol] = useState('BTCUSDT');
-  const [exchange, setExchange] = useState('binance');
+  const [exchange, setExchange] = useState<'binance' | 'bybit' | 'forex'>('binance');
   const [timeframe, setTimeframe] = useState<AlertTimeframe>('1d');
   const [mode, setMode] = useState<TriggerMode>('once');
   

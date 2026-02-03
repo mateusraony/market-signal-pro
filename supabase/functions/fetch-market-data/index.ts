@@ -23,6 +23,27 @@ const timeframeMap: Record<string, string> = {
   '1m': '1M', // Binance uses uppercase M for months
 };
 
+// Forex symbol mappings for Yahoo Finance
+const forexSymbolMap: Record<string, string> = {
+  'XAUUSD': 'GC=F',      // Gold futures
+  'XAGUSD': 'SI=F',      // Silver futures
+  'WTIUSD': 'CL=F',      // WTI Crude Oil
+  'BRENTUSD': 'BZ=F',    // Brent Crude
+  'EURUSD': 'EURUSD=X',
+  'GBPUSD': 'GBPUSD=X',
+  'USDJPY': 'USDJPY=X',
+  'USDCHF': 'USDCHF=X',
+  'AUDUSD': 'AUDUSD=X',
+  'USDCAD': 'USDCAD=X',
+  'NZDUSD': 'NZDUSD=X',
+  'EURGBP': 'EURGBP=X',
+  'EURJPY': 'EURJPY=X',
+  'GBPJPY': 'GBPJPY=X',
+  'SPX500': '^GSPC',     // S&P 500
+  'NAS100': '^NDX',      // Nasdaq 100
+  'DJI30': '^DJI',       // Dow Jones
+};
+
 async function fetchBinanceKlines(
   symbol: string,
   interval: string,
@@ -95,6 +116,123 @@ async function fetchBybitKlines(
   }));
 }
 
+// Fetch forex/commodity price using a free API
+async function fetchForexPrice(symbol: string): Promise<number> {
+  const yahooSymbol = forexSymbolMap[symbol.toUpperCase()];
+  
+  if (!yahooSymbol) {
+    throw new Error(`Unknown forex symbol: ${symbol}`);
+  }
+  
+  console.log(`Fetching forex price for ${symbol} (Yahoo: ${yahooSymbol})`);
+  
+  // Use Yahoo Finance API (free, no key required)
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSymbol}?interval=1d&range=1d`;
+  
+  const response = await fetch(url, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+    },
+  });
+  
+  if (!response.ok) {
+    throw new Error(`Yahoo Finance API error: ${response.status}`);
+  }
+  
+  const data = await response.json();
+  
+  if (data.chart?.result?.[0]?.meta?.regularMarketPrice) {
+    return data.chart.result[0].meta.regularMarketPrice;
+  }
+  
+  throw new Error(`Failed to get price for ${symbol}`);
+}
+
+// Fetch forex candles using Yahoo Finance
+async function fetchForexKlines(
+  symbol: string,
+  interval: string,
+  limit: number = 100
+): Promise<Candle[]> {
+  const yahooSymbol = forexSymbolMap[symbol.toUpperCase()];
+  
+  if (!yahooSymbol) {
+    throw new Error(`Unknown forex symbol: ${symbol}`);
+  }
+  
+  // Map our intervals to Yahoo intervals
+  const yahooIntervalMap: Record<string, { interval: string; range: string }> = {
+    '4h': { interval: '1h', range: '60d' },    // Yahoo doesn't have 4h, use 1h
+    '1d': { interval: '1d', range: '1y' },
+    '1w': { interval: '1wk', range: '5y' },
+    '1M': { interval: '1mo', range: '10y' },
+  };
+  
+  const yahooParams = yahooIntervalMap[interval] || { interval: '1d', range: '1y' };
+  
+  console.log(`Fetching forex klines for ${symbol} (Yahoo: ${yahooSymbol})`);
+  
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSymbol}?interval=${yahooParams.interval}&range=${yahooParams.range}`;
+  
+  const response = await fetch(url, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+    },
+  });
+  
+  if (!response.ok) {
+    throw new Error(`Yahoo Finance API error: ${response.status}`);
+  }
+  
+  const data = await response.json();
+  const result = data.chart?.result?.[0];
+  
+  if (!result) {
+    throw new Error(`No data for ${symbol}`);
+  }
+  
+  const timestamps = result.timestamp || [];
+  const quotes = result.indicators?.quote?.[0] || {};
+  
+  const candles: Candle[] = [];
+  
+  for (let i = 0; i < timestamps.length && candles.length < limit; i++) {
+    if (quotes.open?.[i] != null && quotes.close?.[i] != null) {
+      candles.push({
+        openTime: timestamps[i] * 1000,
+        open: quotes.open[i],
+        high: quotes.high[i] || quotes.open[i],
+        low: quotes.low[i] || quotes.open[i],
+        close: quotes.close[i],
+        volume: quotes.volume?.[i] || 0,
+        closeTime: (timestamps[i + 1] || timestamps[i]) * 1000,
+      });
+    }
+  }
+  
+  // For 4h timeframe, aggregate 1h candles
+  if (interval === '4h' && candles.length > 0) {
+    const aggregated: Candle[] = [];
+    for (let i = 0; i < candles.length; i += 4) {
+      const chunk = candles.slice(i, i + 4);
+      if (chunk.length > 0) {
+        aggregated.push({
+          openTime: chunk[0].openTime,
+          open: chunk[0].open,
+          high: Math.max(...chunk.map(c => c.high)),
+          low: Math.min(...chunk.map(c => c.low)),
+          close: chunk[chunk.length - 1].close,
+          volume: chunk.reduce((sum, c) => sum + c.volume, 0),
+          closeTime: chunk[chunk.length - 1].closeTime,
+        });
+      }
+    }
+    return aggregated.slice(-limit);
+  }
+  
+  return candles.slice(-limit);
+}
+
 function getIntervalMs(interval: string): number {
   const map: Record<string, number> = {
     '4h': 4 * 60 * 60 * 1000,
@@ -106,6 +244,11 @@ function getIntervalMs(interval: string): number {
 }
 
 async function fetchCurrentPrice(symbol: string, exchange: string): Promise<number> {
+  // Check if it's a forex/commodity symbol
+  if (exchange === 'forex' || forexSymbolMap[symbol.toUpperCase()]) {
+    return await fetchForexPrice(symbol);
+  }
+  
   if (exchange === 'bybit') {
     const url = `https://api.bybit.com/v5/market/tickers?category=spot&symbol=${symbol.toUpperCase()}`;
     const response = await fetch(url);
@@ -141,11 +284,14 @@ serve(async (req) => {
 
     console.log(`Fetching market data for ${symbol} on ${exchange}, timeframe: ${timeframe}`);
 
+    // Check if it's a forex symbol
+    const isForexSymbol = exchange === 'forex' || forexSymbolMap[symbol.toUpperCase()];
+
     // If no timeframe, just fetch current price
     if (!timeframe) {
       const price = await fetchCurrentPrice(symbol, exchange);
       return new Response(
-        JSON.stringify({ price, symbol, exchange }),
+        JSON.stringify({ price, symbol, exchange: isForexSymbol ? 'forex' : exchange }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -153,7 +299,9 @@ serve(async (req) => {
     const interval = timeframeMap[timeframe] || timeframe;
     let candles: Candle[];
 
-    if (exchange === 'bybit') {
+    if (isForexSymbol) {
+      candles = await fetchForexKlines(symbol, interval, limit);
+    } else if (exchange === 'bybit') {
       candles = await fetchBybitKlines(symbol, interval, limit);
     } else {
       candles = await fetchBinanceKlines(symbol, interval, limit);
@@ -164,7 +312,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         symbol,
-        exchange,
+        exchange: isForexSymbol ? 'forex' : exchange,
         timeframe,
         price: currentPrice,
         candles,
