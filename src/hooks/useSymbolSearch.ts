@@ -1,36 +1,66 @@
 import { useState, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 
+export type ExchangeType = 'binance' | 'bybit' | 'forex';
+
 export interface SymbolInfo {
   symbol: string;
   baseAsset: string;
   quoteAsset: string;
-  exchange: 'binance' | 'bybit';
+  exchange: ExchangeType;
+  category?: 'crypto' | 'forex' | 'commodity' | 'index';
 }
 
-// Popular symbols to show by default
-const DEFAULT_SYMBOLS: SymbolInfo[] = [
-  { symbol: 'BTCUSDT', baseAsset: 'BTC', quoteAsset: 'USDT', exchange: 'binance' },
-  { symbol: 'ETHUSDT', baseAsset: 'ETH', quoteAsset: 'USDT', exchange: 'binance' },
-  { symbol: 'BNBUSDT', baseAsset: 'BNB', quoteAsset: 'USDT', exchange: 'binance' },
-  { symbol: 'SOLUSDT', baseAsset: 'SOL', quoteAsset: 'USDT', exchange: 'binance' },
-  { symbol: 'XRPUSDT', baseAsset: 'XRP', quoteAsset: 'USDT', exchange: 'binance' },
-  { symbol: 'DOGEUSDT', baseAsset: 'DOGE', quoteAsset: 'USDT', exchange: 'binance' },
-  { symbol: 'ADAUSDT', baseAsset: 'ADA', quoteAsset: 'USDT', exchange: 'binance' },
-  { symbol: 'AVAXUSDT', baseAsset: 'AVAX', quoteAsset: 'USDT', exchange: 'binance' },
-  { symbol: 'DOTUSDT', baseAsset: 'DOT', quoteAsset: 'USDT', exchange: 'binance' },
-  { symbol: 'LINKUSDT', baseAsset: 'LINK', quoteAsset: 'USDT', exchange: 'binance' },
-  { symbol: 'ENAUSDT', baseAsset: 'ENA', quoteAsset: 'USDT', exchange: 'binance' },
-  { symbol: 'FETUSDT', baseAsset: 'FET', quoteAsset: 'USDT', exchange: 'binance' },
-  { symbol: 'OPUSDT', baseAsset: 'OP', quoteAsset: 'USDT', exchange: 'binance' },
-  { symbol: 'ARBUSDT', baseAsset: 'ARB', quoteAsset: 'USDT', exchange: 'binance' },
-  { symbol: 'PEPEUSDT', baseAsset: 'PEPE', quoteAsset: 'USDT', exchange: 'binance' },
-  { symbol: 'MATICUSDT', baseAsset: 'MATIC', quoteAsset: 'USDT', exchange: 'binance' },
-  { symbol: 'NEARUSDT', baseAsset: 'NEAR', quoteAsset: 'USDT', exchange: 'binance' },
-  { symbol: 'ATOMUSDT', baseAsset: 'ATOM', quoteAsset: 'USDT', exchange: 'binance' },
-  { symbol: 'APTUSDT', baseAsset: 'APT', quoteAsset: 'USDT', exchange: 'binance' },
-  { symbol: 'SUIUSDT', baseAsset: 'SUI', quoteAsset: 'USDT', exchange: 'binance' },
+// Forex and commodity symbols (always available)
+const FOREX_SYMBOLS: SymbolInfo[] = [
+  // Commodities
+  { symbol: 'XAUUSD', baseAsset: 'XAU', quoteAsset: 'USD', exchange: 'forex', category: 'commodity' },
+  { symbol: 'XAGUSD', baseAsset: 'XAG', quoteAsset: 'USD', exchange: 'forex', category: 'commodity' },
+  { symbol: 'WTIUSD', baseAsset: 'WTI', quoteAsset: 'USD', exchange: 'forex', category: 'commodity' },
+  { symbol: 'BRENTUSD', baseAsset: 'BRENT', quoteAsset: 'USD', exchange: 'forex', category: 'commodity' },
+  // Major forex pairs
+  { symbol: 'EURUSD', baseAsset: 'EUR', quoteAsset: 'USD', exchange: 'forex', category: 'forex' },
+  { symbol: 'GBPUSD', baseAsset: 'GBP', quoteAsset: 'USD', exchange: 'forex', category: 'forex' },
+  { symbol: 'USDJPY', baseAsset: 'USD', quoteAsset: 'JPY', exchange: 'forex', category: 'forex' },
+  { symbol: 'USDCHF', baseAsset: 'USD', quoteAsset: 'CHF', exchange: 'forex', category: 'forex' },
+  { symbol: 'AUDUSD', baseAsset: 'AUD', quoteAsset: 'USD', exchange: 'forex', category: 'forex' },
+  { symbol: 'USDCAD', baseAsset: 'USD', quoteAsset: 'CAD', exchange: 'forex', category: 'forex' },
+  { symbol: 'NZDUSD', baseAsset: 'NZD', quoteAsset: 'USD', exchange: 'forex', category: 'forex' },
+  // Cross pairs
+  { symbol: 'EURGBP', baseAsset: 'EUR', quoteAsset: 'GBP', exchange: 'forex', category: 'forex' },
+  { symbol: 'EURJPY', baseAsset: 'EUR', quoteAsset: 'JPY', exchange: 'forex', category: 'forex' },
+  { symbol: 'GBPJPY', baseAsset: 'GBP', quoteAsset: 'JPY', exchange: 'forex', category: 'forex' },
+  // Indices (as reference)
+  { symbol: 'SPX500', baseAsset: 'SPX', quoteAsset: 'USD', exchange: 'forex', category: 'index' },
+  { symbol: 'NAS100', baseAsset: 'NDX', quoteAsset: 'USD', exchange: 'forex', category: 'index' },
+  { symbol: 'DJI30', baseAsset: 'DJI', quoteAsset: 'USD', exchange: 'forex', category: 'index' },
 ];
+
+// Popular crypto symbols to show by default
+const DEFAULT_CRYPTO_SYMBOLS: SymbolInfo[] = [
+  { symbol: 'BTCUSDT', baseAsset: 'BTC', quoteAsset: 'USDT', exchange: 'binance', category: 'crypto' },
+  { symbol: 'ETHUSDT', baseAsset: 'ETH', quoteAsset: 'USDT', exchange: 'binance', category: 'crypto' },
+  { symbol: 'BNBUSDT', baseAsset: 'BNB', quoteAsset: 'USDT', exchange: 'binance', category: 'crypto' },
+  { symbol: 'SOLUSDT', baseAsset: 'SOL', quoteAsset: 'USDT', exchange: 'binance', category: 'crypto' },
+  { symbol: 'XRPUSDT', baseAsset: 'XRP', quoteAsset: 'USDT', exchange: 'binance', category: 'crypto' },
+  { symbol: 'DOGEUSDT', baseAsset: 'DOGE', quoteAsset: 'USDT', exchange: 'binance', category: 'crypto' },
+  { symbol: 'ADAUSDT', baseAsset: 'ADA', quoteAsset: 'USDT', exchange: 'binance', category: 'crypto' },
+  { symbol: 'AVAXUSDT', baseAsset: 'AVAX', quoteAsset: 'USDT', exchange: 'binance', category: 'crypto' },
+  { symbol: 'DOTUSDT', baseAsset: 'DOT', quoteAsset: 'USDT', exchange: 'binance', category: 'crypto' },
+  { symbol: 'LINKUSDT', baseAsset: 'LINK', quoteAsset: 'USDT', exchange: 'binance', category: 'crypto' },
+  { symbol: 'ENAUSDT', baseAsset: 'ENA', quoteAsset: 'USDT', exchange: 'binance', category: 'crypto' },
+  { symbol: 'FETUSDT', baseAsset: 'FET', quoteAsset: 'USDT', exchange: 'binance', category: 'crypto' },
+  { symbol: 'OPUSDT', baseAsset: 'OP', quoteAsset: 'USDT', exchange: 'binance', category: 'crypto' },
+  { symbol: 'ARBUSDT', baseAsset: 'ARB', quoteAsset: 'USDT', exchange: 'binance', category: 'crypto' },
+  { symbol: 'PEPEUSDT', baseAsset: 'PEPE', quoteAsset: 'USDT', exchange: 'binance', category: 'crypto' },
+  { symbol: 'MATICUSDT', baseAsset: 'MATIC', quoteAsset: 'USDT', exchange: 'binance', category: 'crypto' },
+  { symbol: 'NEARUSDT', baseAsset: 'NEAR', quoteAsset: 'USDT', exchange: 'binance', category: 'crypto' },
+  { symbol: 'ATOMUSDT', baseAsset: 'ATOM', quoteAsset: 'USDT', exchange: 'binance', category: 'crypto' },
+  { symbol: 'APTUSDT', baseAsset: 'APT', quoteAsset: 'USDT', exchange: 'binance', category: 'crypto' },
+  { symbol: 'SUIUSDT', baseAsset: 'SUI', quoteAsset: 'USDT', exchange: 'binance', category: 'crypto' },
+];
+
+const DEFAULT_SYMBOLS: SymbolInfo[] = [...DEFAULT_CRYPTO_SYMBOLS, ...FOREX_SYMBOLS];
 
 // Fetch all available symbols from Binance
 async function fetchBinanceSymbols(): Promise<SymbolInfo[]> {
@@ -78,7 +108,7 @@ async function fetchBybitSymbols(): Promise<SymbolInfo[]> {
   }
 }
 
-export function useSymbolSearch(exchange: 'binance' | 'bybit' | 'all' = 'all') {
+export function useSymbolSearch(exchange: ExchangeType | 'all' = 'all') {
   const [searchTerm, setSearchTerm] = useState('');
 
   // Fetch all symbols from Binance (cached for 5 minutes)
@@ -106,9 +136,13 @@ export function useSymbolSearch(exchange: 'binance' | 'bybit' | 'all' = 'all') {
     
     if (exchange === 'binance') return binanceSymbols;
     if (exchange === 'bybit') return bybitSymbols;
+    if (exchange === 'forex') return FOREX_SYMBOLS;
     
     // Merge and dedupe (prefer Binance if same symbol exists)
     const symbolMap = new Map<string, SymbolInfo>();
+    
+    // Add forex symbols first
+    FOREX_SYMBOLS.forEach(s => symbolMap.set(s.symbol, s));
     
     binanceSymbols.forEach(s => symbolMap.set(s.symbol, s));
     bybitSymbols.forEach(s => {
@@ -130,6 +164,7 @@ export function useSymbolSearch(exchange: 'binance' | 'bybit' | 'all' = 'all') {
       const defaults = DEFAULT_SYMBOLS.filter(d => {
         if (exchange === 'binance') return d.exchange === 'binance';
         if (exchange === 'bybit') return d.exchange === 'bybit';
+        if (exchange === 'forex') return d.exchange === 'forex';
         return true;
       });
       
@@ -141,12 +176,27 @@ export function useSymbolSearch(exchange: 'binance' | 'bybit' | 'all' = 'all') {
     }
     
     const term = searchTerm.toUpperCase();
-    return symbols
+    
+    // Also search in forex symbols
+    const forexMatches = FOREX_SYMBOLS.filter(s =>
+      s.symbol.includes(term) || s.baseAsset.includes(term)
+    );
+    
+    const exchangeMatches = symbols
       .filter(s => 
         s.symbol.includes(term) || 
         s.baseAsset.includes(term)
-      )
-      .slice(0, 100); // Limit results for performance
+      );
+    
+    // Combine and dedupe
+    const resultMap = new Map<string, SymbolInfo>();
+    [...forexMatches, ...exchangeMatches].forEach(s => {
+      if (!resultMap.has(s.symbol)) {
+        resultMap.set(s.symbol, s);
+      }
+    });
+    
+    return Array.from(resultMap.values()).slice(0, 100);
   }, [allSymbols, searchTerm, exchange]);
 
   return {
@@ -160,13 +210,23 @@ export function useSymbolSearch(exchange: 'binance' | 'bybit' | 'all' = 'all') {
 }
 
 // Hook for validating if a symbol exists
-export function useValidateSymbol(symbol: string, exchange: 'binance' | 'bybit') {
+export function useValidateSymbol(symbol: string, exchange: ExchangeType) {
   return useQuery({
     queryKey: ['validate-symbol', symbol, exchange],
     queryFn: async () => {
       if (!symbol) return null;
       
       try {
+        // For forex symbols, check if it's in our predefined list
+        if (exchange === 'forex') {
+          const isForexSymbol = FOREX_SYMBOLS.some(s => s.symbol === symbol.toUpperCase());
+          if (isForexSymbol) {
+            // Return valid for forex symbols (we'll fetch price from API)
+            return { valid: true, price: 0 };
+          }
+          return null;
+        }
+        
         if (exchange === 'binance') {
           const response = await fetch(
             `https://api.binance.com/api/v3/ticker/price?symbol=${symbol.toUpperCase()}`
@@ -174,7 +234,7 @@ export function useValidateSymbol(symbol: string, exchange: 'binance' | 'bybit')
           if (!response.ok) return null;
           const data = await response.json();
           return { valid: true, price: parseFloat(data.price) };
-        } else {
+        } else if (exchange === 'bybit') {
           const response = await fetch(
             `https://api.bybit.com/v5/market/tickers?category=spot&symbol=${symbol.toUpperCase()}`
           );
@@ -183,6 +243,7 @@ export function useValidateSymbol(symbol: string, exchange: 'binance' | 'bybit')
           if (data.retCode !== 0 || !data.result.list.length) return null;
           return { valid: true, price: parseFloat(data.result.list[0].lastPrice) };
         }
+        return null;
       } catch {
         return null;
       }
@@ -191,3 +252,6 @@ export function useValidateSymbol(symbol: string, exchange: 'binance' | 'bybit')
     staleTime: 30 * 1000, // 30 seconds
   });
 }
+
+// Export forex symbols for use in other components
+export { FOREX_SYMBOLS };
