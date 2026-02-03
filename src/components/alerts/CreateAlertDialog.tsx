@@ -13,26 +13,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Plus, DollarSign, TrendingUp, BarChart3, Volume2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { SymbolSearchCombobox } from './SymbolSearchCombobox';
 
 interface CreateAlertDialogProps {
   trigger?: React.ReactNode;
 }
-
-const POPULAR_SYMBOLS = [
-  'BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'SOLUSDT', 'XRPUSDT',
-  'DOGEUSDT', 'ADAUSDT', 'AVAXUSDT', 'DOTUSDT', 'LINKUSDT'
-];
-
-const EXCHANGES = ['binance', 'bybit', 'coinbase'];
 
 const TIMEFRAMES: { value: AlertTimeframe; label: string }[] = [
   { value: '4h', label: '4 Horas' },
@@ -206,33 +193,17 @@ export function CreateAlertDialog({ trigger }: CreateAlertDialogProps) {
         ) : (
           <div className="space-y-6 py-4">
             {/* Symbol & Exchange */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Símbolo</Label>
-                <Select value={symbol} onValueChange={setSymbol}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {POPULAR_SYMBOLS.map((s) => (
-                      <SelectItem key={s} value={s}>{s}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Exchange</Label>
-                <Select value={exchange} onValueChange={setExchange}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {EXCHANGES.map((e) => (
-                      <SelectItem key={e} value={e} className="capitalize">{e}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="space-y-2">
+              <Label>Símbolo</Label>
+              <SymbolSearchCombobox
+                value={symbol}
+                exchange={exchange as 'binance' | 'bybit'}
+                onValueChange={setSymbol}
+                onExchangeChange={(e) => setExchange(e)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Busca automática em Binance e Bybit. Digite para encontrar qualquer par.
+              </p>
             </div>
 
             {/* Timeframe (not for price) */}
@@ -479,15 +450,38 @@ export function CreateAlertDialog({ trigger }: CreateAlertDialogProps) {
 
             <div className="space-y-2">
               <Label>Comportamento</Label>
-              <Select value={mode} onValueChange={(v) => setMode(v as TriggerMode)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="once">Disparar uma vez</SelectItem>
-                  <SelectItem value="every_touch">Sempre que ocorrer</SelectItem>
-                </SelectContent>
-              </Select>
+              <RadioGroup 
+                value={mode} 
+                onValueChange={(v) => setMode(v as TriggerMode)}
+                className="flex gap-2"
+              >
+                <div className="flex-1">
+                  <RadioGroupItem value="once" id="mode-once" className="peer sr-only" />
+                  <Label
+                    htmlFor="mode-once"
+                    className={cn(
+                      "flex items-center justify-center px-3 py-2 rounded-lg border cursor-pointer transition-all",
+                      "peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/10",
+                      "hover:bg-muted"
+                    )}
+                  >
+                    Uma vez
+                  </Label>
+                </div>
+                <div className="flex-1">
+                  <RadioGroupItem value="every_touch" id="mode-every" className="peer sr-only" />
+                  <Label
+                    htmlFor="mode-every"
+                    className={cn(
+                      "flex items-center justify-center px-3 py-2 rounded-lg border cursor-pointer transition-all",
+                      "peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/10",
+                      "hover:bg-muted"
+                    )}
+                  >
+                    Sempre
+                  </Label>
+                </div>
+              </RadioGroup>
             </div>
 
             {/* Actions */}
