@@ -1,7 +1,5 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { 
-  LineChart, 
-  Line, 
   XAxis, 
   YAxis, 
   ResponsiveContainer,
@@ -14,8 +12,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { usePriceHistory } from '@/hooks/usePriceHistory';
-import { TrendingUp, TrendingDown, Wifi, WifiOff, ArrowUp, ArrowDown } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wifi, WifiOff, ArrowUp, ArrowDown, AlertTriangle, Target } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useNotificationSound } from '@/hooks/useNotificationSound';
 
 interface PriceChartProps {
   symbol: string;
@@ -25,6 +24,35 @@ interface PriceChartProps {
 
 export function PriceChart({ symbol, exchange, targetPrice }: PriceChartProps) {
   const { priceHistory, currentPrice, change24h, isConnected, high24h, low24h } = usePriceHistory(symbol);
+  const { playAlertSound } = useNotificationSound();
+  const [hasAlerted, setHasAlerted] = useState(false);
+
+  // Calculate proximity to target price
+  const proximityInfo = useMemo(() => {
+    if (!targetPrice || !currentPrice) return null;
+    
+    const distance = Math.abs(currentPrice - targetPrice);
+    const percentDistance = (distance / targetPrice) * 100;
+    const isAbove = currentPrice > targetPrice;
+    
+    // Thresholds: critical (<1%), warning (<3%), near (<5%)
+    let level: 'critical' | 'warning' | 'near' | null = null;
+    if (percentDistance < 1) level = 'critical';
+    else if (percentDistance < 3) level = 'warning';
+    else if (percentDistance < 5) level = 'near';
+    
+    return { distance, percentDistance, isAbove, level };
+  }, [currentPrice, targetPrice]);
+
+  // Play sound when reaching critical level
+  useEffect(() => {
+    if (proximityInfo?.level === 'critical' && !hasAlerted) {
+      playAlertSound();
+      setHasAlerted(true);
+    } else if (proximityInfo?.level !== 'critical' && hasAlerted) {
+      setHasAlerted(false);
+    }
+  }, [proximityInfo?.level, hasAlerted, playAlertSound]);
 
   const formattedPrice = useMemo(() => {
     if (!currentPrice) return '—';
@@ -44,6 +72,17 @@ export function PriceChart({ symbol, exchange, targetPrice }: PriceChartProps) {
 
   const isPositive = change24h !== null && change24h >= 0;
   const chartColor = isPositive ? 'hsl(var(--chart-2))' : 'hsl(var(--destructive))';
+  
+  // Card border color based on proximity
+  const cardBorderClass = useMemo(() => {
+    if (!proximityInfo?.level) return 'border-border/50 hover:border-primary/30';
+    switch (proximityInfo.level) {
+      case 'critical': return 'border-destructive animate-pulse shadow-lg shadow-destructive/20';
+      case 'warning': return 'border-warning animate-pulse';
+      case 'near': return 'border-primary/50';
+      default: return 'border-border/50 hover:border-primary/30';
+    }
+  }, [proximityInfo?.level]);
 
   if (priceHistory.length === 0) {
     return (
@@ -66,12 +105,26 @@ export function PriceChart({ symbol, exchange, targetPrice }: PriceChartProps) {
   }
 
   return (
-    <Card className="bg-card/50 border-border/50 hover:border-primary/30 transition-colors">
+    <Card className={cn("bg-card/50 transition-all duration-300", cardBorderClass)}>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg font-mono flex items-center gap-2">
             {symbol}
             <Badge variant="outline" className="text-xs uppercase">{exchange}</Badge>
+            {proximityInfo?.level && (
+              <Badge 
+                variant={proximityInfo.level === 'critical' ? 'destructive' : 'secondary'}
+                className={cn(
+                  "text-xs gap-1",
+                  proximityInfo.level === 'critical' && "animate-pulse",
+                  proximityInfo.level === 'warning' && "bg-warning text-warning-foreground"
+                )}
+              >
+                {proximityInfo.level === 'critical' && <AlertTriangle className="h-3 w-3" />}
+                {proximityInfo.level === 'warning' && <Target className="h-3 w-3" />}
+                {proximityInfo.percentDistance.toFixed(1)}% do alvo
+              </Badge>
+            )}
           </CardTitle>
           <div className="flex items-center gap-2">
             {isConnected ? (
@@ -86,7 +139,10 @@ export function PriceChart({ symbol, exchange, targetPrice }: PriceChartProps) {
         {/* Price and change */}
         <div className="flex items-end justify-between">
           <div>
-            <div className="text-2xl font-bold font-mono tracking-tight">
+            <div className={cn(
+              "text-2xl font-bold font-mono tracking-tight transition-colors",
+              proximityInfo?.level === 'critical' && "text-destructive"
+            )}>
               ${formattedPrice}
             </div>
             <div className={cn(
@@ -103,16 +159,37 @@ export function PriceChart({ symbol, exchange, targetPrice }: PriceChartProps) {
             </div>
           </div>
           
-          {/* High/Low */}
+          {/* Target price info */}
           <div className="text-right text-xs space-y-1">
-            <div className="flex items-center gap-1 text-chart-2">
-              <ArrowUp className="h-3 w-3" />
-              <span className="font-mono">${high24h?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-            </div>
-            <div className="flex items-center gap-1 text-destructive">
-              <ArrowDown className="h-3 w-3" />
-              <span className="font-mono">${low24h?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-            </div>
+            {targetPrice ? (
+              <>
+                <div className="flex items-center gap-1 text-primary">
+                  <Target className="h-3 w-3" />
+                  <span className="font-mono">${targetPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                </div>
+                {proximityInfo && (
+                  <div className={cn(
+                    "text-xs font-medium",
+                    proximityInfo.level === 'critical' && "text-destructive",
+                    proximityInfo.level === 'warning' && "text-warning",
+                    proximityInfo.level === 'near' && "text-primary"
+                  )}>
+                    {proximityInfo.isAbove ? '↑' : '↓'} {proximityInfo.percentDistance.toFixed(2)}%
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <div className="flex items-center gap-1 text-chart-2">
+                  <ArrowUp className="h-3 w-3" />
+                  <span className="font-mono">${high24h?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                </div>
+                <div className="flex items-center gap-1 text-destructive">
+                  <ArrowDown className="h-3 w-3" />
+                  <span className="font-mono">${low24h?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
