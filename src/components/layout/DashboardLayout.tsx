@@ -7,15 +7,16 @@ import {
   Settings, 
   PauseCircle,
   PlayCircle,
-  Menu
+  Menu,
+  BarChart3
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 
 interface DashboardLayoutProps {
   children: ReactNode;
-  currentPage: 'alerts' | 'history' | 'settings';
-  onPageChange: (page: 'alerts' | 'history' | 'settings') => void;
+  currentPage: 'dashboard' | 'alerts' | 'history' | 'settings';
+  onPageChange: (page: 'dashboard' | 'alerts' | 'history' | 'settings') => void;
   onPauseAll?: () => void;
   onResumeAll?: () => void;
   isPanicMode?: boolean;
@@ -32,6 +33,7 @@ export function DashboardLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const navItems = [
+    { id: 'dashboard' as const, label: 'Dashboard', icon: BarChart3 },
     { id: 'alerts' as const, label: 'Alertas', icon: Bell },
     { id: 'history' as const, label: 'Histórico', icon: History },
     { id: 'settings' as const, label: 'Configurações', icon: Settings },
