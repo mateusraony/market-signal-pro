@@ -159,13 +159,17 @@ export function SettingsPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
-            <h4 className="font-medium text-sm mb-2">Como configurar:</h4>
-            <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
-              <li>Procure pelo bot <code className="bg-muted px-1 rounded">@SeuBotDeAlertas</code> no Telegram</li>
-              <li>Envie o comando <code className="bg-muted px-1 rounded">/start</code></li>
-              <li>O bot vai informar seu Telegram ID</li>
-              <li>Cole o ID no campo abaixo e teste</li>
+            <h4 className="font-medium text-sm mb-2">📱 Como obter seu Telegram ID:</h4>
+            <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
+              <li>Abra o Telegram e procure por <a href="https://t.me/userinfobot" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">@userinfobot</a></li>
+              <li>Envie qualquer mensagem para ele</li>
+              <li>Ele responderá com seu <strong>ID numérico</strong> (ex: 123456789)</li>
+              <li>Cole esse número no campo abaixo</li>
+              <li>Clique em "Enviar Notificação de Teste"</li>
             </ol>
+            <p className="text-xs text-muted-foreground mt-3 pt-3 border-t border-primary/10">
+              ⚠️ <strong>Importante:</strong> Após configurar o ID, você precisa iniciar uma conversa com o bot de alertas para receber mensagens.
+            </p>
           </div>
           
           <div className="space-y-2">
