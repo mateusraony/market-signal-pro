@@ -18,11 +18,10 @@ export function DashboardPage() {
       .forEach(alert => {
         const key = `${alert.symbol}-${alert.exchange}`;
         if (!symbolMap.has(key)) {
-          const params = alert.params as { price?: number };
           symbolMap.set(key, {
             symbol: alert.symbol,
             exchange: alert.exchange,
-            targetPrice: alert.type === 'price_level' ? params.price : undefined,
+            targetPrice: alert.type === 'price_level' ? alert.params.target_price : undefined,
           });
         }
       });
