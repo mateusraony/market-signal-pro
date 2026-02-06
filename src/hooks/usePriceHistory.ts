@@ -23,6 +23,8 @@ export function usePriceHistory(symbol: string, maxPoints: number = 60): UsePric
   const [low24h, setLow24h] = useState<number | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
+  const fallbackIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const wsFailedRef = useRef(false);
 
   const formatTime = useCallback((date: Date) => {
     return date.toLocaleTimeString('pt-BR', { 
@@ -32,13 +34,55 @@ export function usePriceHistory(symbol: string, maxPoints: number = 60): UsePric
     });
   }, []);
 
+  // Fallback REST API polling
+  const fetchPriceViaREST = useCallback(async () => {
+    try {
+      const response = await fetch(
+        `https://api.binance.com/api/v3/ticker/24hr?symbol=${symbol.toUpperCase()}`
+      );
+      
+      if (!response.ok) return;
+      
+      const data = await response.json();
+      const price = parseFloat(data.lastPrice);
+      const now = new Date();
+      
+      setCurrentPrice(price);
+      setChange24h(parseFloat(data.priceChangePercent));
+      setHigh24h(parseFloat(data.highPrice));
+      setLow24h(parseFloat(data.lowPrice));
+      setIsConnected(true);
+      
+      setPriceHistory(prev => {
+        const newPoint: PricePoint = {
+          time: now.getTime(),
+          price,
+          formattedTime: formatTime(now),
+        };
+        
+        const updated = [...prev, newPoint];
+        if (updated.length > maxPoints) {
+          return updated.slice(-maxPoints);
+        }
+        return updated;
+      });
+    } catch (error) {
+      console.error('REST API error:', error);
+    }
+  }, [symbol, maxPoints, formatTime]);
+
   useEffect(() => {
     if (!symbol) return;
 
-    // Close existing connection
+    // Close existing connections
     if (wsRef.current) {
       wsRef.current.close();
     }
+    if (fallbackIntervalRef.current) {
+      clearInterval(fallbackIntervalRef.current);
+    }
+    
+    wsFailedRef.current = false;
 
     const ws = new WebSocket(
       `wss://stream.binance.com:9443/ws/${symbol.toLowerCase()}@ticker`
@@ -48,6 +92,7 @@ export function usePriceHistory(symbol: string, maxPoints: number = 60): UsePric
 
     ws.onopen = () => {
       setIsConnected(true);
+      wsFailedRef.current = false;
     };
 
     ws.onmessage = (event) => {
@@ -68,7 +113,6 @@ export function usePriceHistory(symbol: string, maxPoints: number = 60): UsePric
         };
         
         const updated = [...prev, newPoint];
-        // Keep only last maxPoints
         if (updated.length > maxPoints) {
           return updated.slice(-maxPoints);
         }
@@ -77,17 +121,26 @@ export function usePriceHistory(symbol: string, maxPoints: number = 60): UsePric
     };
 
     ws.onerror = () => {
-      setIsConnected(false);
+      console.log(`WebSocket error for ${symbol}, falling back to REST API`);
+      wsFailedRef.current = true;
+      // Start REST polling as fallback
+      fetchPriceViaREST();
+      fallbackIntervalRef.current = setInterval(fetchPriceViaREST, 3000);
     };
 
     ws.onclose = () => {
-      setIsConnected(false);
+      if (!wsFailedRef.current) {
+        setIsConnected(false);
+      }
     };
 
     return () => {
       ws.close();
+      if (fallbackIntervalRef.current) {
+        clearInterval(fallbackIntervalRef.current);
+      }
     };
-  }, [symbol, maxPoints, formatTime]);
+  }, [symbol, maxPoints, formatTime, fetchPriceViaREST]);
 
   return { priceHistory, currentPrice, change24h, isConnected, high24h, low24h };
 }
