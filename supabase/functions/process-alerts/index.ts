@@ -10,6 +10,9 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const TELEGRAM_BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN');
 
+// In-memory store for previous prices (persists across invocations within the same instance)
+const previousPriceStore = new Map<string, number>();
+
 interface Alert {
   id: string;
   user_id: string;
@@ -32,6 +35,7 @@ interface Alert {
   last_trigger_candle_open_time: string | null;
   cooldown_until: string | null;
   priority: number;
+  last_known_price?: number;
 }
 
 interface MarketData {
@@ -62,11 +66,9 @@ function predictDirection(
 
   if (type === 'rsi_level' && data.rsi !== null) {
     if (data.rsi <= 30) {
-      // Oversold - likely to go up
       probUp = 0.65 + (30 - data.rsi) * 0.01;
       comment = `RSI em zona de sobrevenda (${data.rsi.toFixed(1)}). Possível reversão de alta.`;
     } else if (data.rsi >= 70) {
-      // Overbought - likely to go down
       probUp = 0.35 - (data.rsi - 70) * 0.01;
       comment = `RSI em zona de sobrecompra (${data.rsi.toFixed(1)}). Possível reversão de baixa.`;
     } else {
@@ -84,7 +86,6 @@ function predictDirection(
         comment = `MACD cruzou abaixo do Signal. Momentum de baixa.`;
       }
     } else {
-      // Zero cross
       if (data.macd.line > 0) {
         probUp = 0.62;
         comment = `MACD cruzou linha zero para cima. Tendência de alta confirmada.`;
@@ -96,7 +97,6 @@ function predictDirection(
   }
 
   if (type === 'volume_spike' && data.volumeRatio !== null) {
-    // High volume usually confirms the current trend
     if (data.candles && data.candles.length >= 2) {
       const lastCandle = data.candles[data.candles.length - 1];
       const prevCandle = data.candles[data.candles.length - 2];
@@ -117,14 +117,16 @@ function predictDirection(
     } else if (params.price_direction === 'below') {
       probUp = 0.45;
       comment = `Preço rompeu suporte em $${params.target_price}. Possível continuação de baixa.`;
+    } else {
+      // Cross mode
+      probUp = 0.50;
+      comment = `Preço cruzou nível crítico em $${params.target_price}.`;
     }
   }
 
-  // Clamp probabilities
   probUp = Math.max(0.1, Math.min(0.9, probUp));
   const probDown = 1 - probUp;
 
-  // Determine confidence based on probability difference
   let confidence: 'low' | 'medium' | 'high' = 'low';
   const diff = Math.abs(probUp - 0.5);
   if (diff > 0.2) confidence = 'high';
@@ -139,10 +141,11 @@ function predictDirection(
   };
 }
 
-// Check if alert should trigger
+// Check if alert should trigger - now with proper cross detection
 function checkAlertCondition(
   alert: Alert,
   data: MarketData,
+  previousPrice: number | null,
   previousData?: MarketData
 ): TriggerResult {
   const { type, params, mode } = alert;
@@ -153,27 +156,42 @@ function checkAlertCondition(
       const direction = params.price_direction!;
       const price = data.price;
 
-      if (direction === 'above' && price >= target) {
-        if (mode === 'crossing' && previousData && previousData.price >= target) {
-          return { triggered: false };
+      if (direction === 'above') {
+        if (price >= target) {
+          // For crossing mode, check if we crossed from below
+          if (mode === 'crossing' && previousPrice !== null && previousPrice >= target) {
+            return { triggered: false };
+          }
+          const prediction = predictDirection(type, data, params);
+          return { triggered: true, ...prediction };
         }
-        const prediction = predictDirection(type, data, params);
-        return { triggered: true, ...prediction };
-      }
-      if (direction === 'below' && price <= target) {
-        if (mode === 'crossing' && previousData && previousData.price <= target) {
-          return { triggered: false };
+      } else if (direction === 'below') {
+        if (price <= target) {
+          // For crossing mode, check if we crossed from above
+          if (mode === 'crossing' && previousPrice !== null && previousPrice <= target) {
+            return { triggered: false };
+          }
+          const prediction = predictDirection(type, data, params);
+          return { triggered: true, ...prediction };
         }
-        const prediction = predictDirection(type, data, params);
-        return { triggered: true, ...prediction };
-      }
-      if (direction === 'cross') {
-        if (previousData) {
-          if ((previousData.price < target && price >= target) || 
-              (previousData.price > target && price <= target)) {
+      } else if (direction === 'cross') {
+        // Cross direction: trigger when price crosses the target level in either direction
+        if (previousPrice !== null) {
+          const crossedUp = previousPrice < target && price >= target;
+          const crossedDown = previousPrice > target && price <= target;
+          
+          if (crossedUp || crossedDown) {
+            console.log(`Price cross detected! Prev: ${previousPrice}, Current: ${price}, Target: ${target}`);
             const prediction = predictDirection(type, data, params);
+            prediction.direction = crossedUp ? 'up' : 'down';
+            prediction.comment = crossedUp 
+              ? `Preço cruzou para cima do nível $${target}. Rompimento de resistência.`
+              : `Preço cruzou para baixo do nível $${target}. Rompimento de suporte.`;
             return { triggered: true, ...prediction };
           }
+        } else {
+          // First time seeing this symbol - just store the price, don't trigger
+          console.log(`No previous price for ${alert.symbol}, storing current: ${price}`);
         }
       }
       break;
@@ -193,7 +211,6 @@ function checkAlertCondition(
           }
         }
       } else {
-        // Touch mode
         if (Math.abs(data.rsi - level) <= 2) {
           const prediction = predictDirection(type, data, params);
           return { triggered: true, ...prediction };
@@ -208,7 +225,6 @@ function checkAlertCondition(
 
       if (macdMode === 'signal_cross') {
         if (previousData?.macd) {
-          // Check for crossover
           const prevHist = previousData.macd.histogram;
           const currHist = data.macd.histogram;
           if ((prevHist < 0 && currHist >= 0) || (prevHist > 0 && currHist <= 0)) {
@@ -217,7 +233,6 @@ function checkAlertCondition(
           }
         }
       } else {
-        // Zero cross
         if (previousData?.macd) {
           const prevLine = previousData.macd.line;
           const currLine = data.macd.line;
@@ -378,8 +393,12 @@ serve(async (req) => {
 
       console.log(`Data for ${symbol}: price=${marketData.price}, rsi=${marketData.rsi}, macd=${marketData.macd?.line}`);
 
+      // Get previous price for this symbol from in-memory store
+      const priceKey = `${symbol}-${exchange}`;
+      const previousPrice = previousPriceStore.get(priceKey) ?? null;
+      
       for (const alert of groupAlerts) {
-        const result = checkAlertCondition(alert, marketData);
+        const result = checkAlertCondition(alert, marketData, previousPrice);
 
         if (result.triggered) {
           console.log(`Alert ${alert.id} triggered!`);
@@ -489,6 +508,9 @@ serve(async (req) => {
           });
         }
       }
+      
+      // Store current price for next iteration (for cross detection)
+      previousPriceStore.set(priceKey, marketData.price);
     }
 
     console.log(`Processing complete. ${triggeredAlerts.length} alerts triggered.`);
