@@ -69,9 +69,9 @@ export function AlertCard({ alert, onTogglePause, onDelete, onEdit }: AlertCardP
 
   return (
     <Card className={cn(
-      "card-interactive border-border/50",
-      alert.paused && "opacity-60",
-      !alert.active && "opacity-40"
+      "card-interactive border-border/50 relative",
+      alert.paused && "opacity-70",
+      !alert.active && "opacity-60 bg-muted/30"
     )}>
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
@@ -111,38 +111,46 @@ export function AlertCard({ alert, onTogglePause, onDelete, onEdit }: AlertCardP
                 Ativo
               </Badge>
             ) : (
-              <Badge variant="outline" className="text-xs">
-                Inativo
+              <Badge variant="destructive" className="text-xs bg-muted text-muted-foreground">
+                Disparado
               </Badge>
             )}
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
+                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-accent">
                   <MoreVertical className="w-4 h-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => onEdit(alert)}>
+              <DropdownMenuContent align="end" className="z-50">
+                <DropdownMenuItem 
+                  onClick={() => onEdit(alert)}
+                  className="cursor-pointer"
+                >
                   <Edit className="w-4 h-4 mr-2" />
                   Editar
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onTogglePause(alert.id, !alert.paused)}>
-                  {alert.paused ? (
-                    <>
-                      <Play className="w-4 h-4 mr-2" />
-                      Reativar
-                    </>
-                  ) : (
-                    <>
-                      <Pause className="w-4 h-4 mr-2" />
-                      Pausar
-                    </>
-                  )}
-                </DropdownMenuItem>
+                {alert.active && (
+                  <DropdownMenuItem 
+                    onClick={() => onTogglePause(alert.id, !alert.paused)}
+                    className="cursor-pointer"
+                  >
+                    {alert.paused ? (
+                      <>
+                        <Play className="w-4 h-4 mr-2" />
+                        Reativar
+                      </>
+                    ) : (
+                      <>
+                        <Pause className="w-4 h-4 mr-2" />
+                        Pausar
+                      </>
+                    )}
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem 
                   onClick={() => onDelete(alert.id)}
-                  className="text-destructive focus:text-destructive"
+                  className="text-destructive focus:text-destructive cursor-pointer"
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
                   Excluir
