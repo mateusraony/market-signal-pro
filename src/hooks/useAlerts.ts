@@ -123,6 +123,24 @@ export function useAlerts() {
     },
   });
 
+  const reactivateAlert = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('alerts')
+        .update({ active: true, paused: false, cooldown_until: null, last_trigger_candle_open_time: null })
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['alerts'] });
+      toast.success('Alerta reativado com sucesso');
+    },
+    onError: (error) => {
+      toast.error('Erro: ' + error.message);
+    },
+  });
+
   const pauseAll = useMutation({
     mutationFn: async () => {
       const { error } = await supabase
@@ -167,6 +185,7 @@ export function useAlerts() {
     updateAlert,
     deleteAlert,
     togglePause,
+    reactivateAlert,
     pauseAll,
     resumeAll,
   };

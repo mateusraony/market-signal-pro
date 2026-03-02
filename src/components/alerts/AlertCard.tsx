@@ -19,7 +19,8 @@ import {
   Trash2,
   Edit,
   ExternalLink,
-  Volume2
+  Volume2,
+  RotateCcw
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLivePrice } from '@/hooks/useLivePrices';
@@ -29,9 +30,10 @@ interface AlertCardProps {
   onTogglePause: (id: string, paused: boolean) => void;
   onDelete: (id: string) => void;
   onEdit: (alert: Alert) => void;
+  onReactivate: (id: string) => void;
 }
 
-export function AlertCard({ alert, onTogglePause, onDelete, onEdit }: AlertCardProps) {
+export function AlertCard({ alert, onTogglePause, onDelete, onEdit, onReactivate }: AlertCardProps) {
   const livePrice = useLivePrice(alert.symbol);
 
   const getTypeIcon = () => {
@@ -111,7 +113,7 @@ export function AlertCard({ alert, onTogglePause, onDelete, onEdit }: AlertCardP
                 Ativo
               </Badge>
             ) : (
-              <Badge variant="destructive" className="text-xs bg-muted text-muted-foreground">
+              <Badge variant="secondary" className="text-xs">
                 Disparado
               </Badge>
             )}
@@ -130,6 +132,15 @@ export function AlertCard({ alert, onTogglePause, onDelete, onEdit }: AlertCardP
                   <Edit className="w-4 h-4 mr-2" />
                   Editar
                 </DropdownMenuItem>
+                {!alert.active && (
+                  <DropdownMenuItem 
+                    onClick={() => onReactivate(alert.id)}
+                    className="cursor-pointer text-success"
+                  >
+                    <RotateCcw className="w-4 h-4 mr-2" />
+                    Reativar Alerta
+                  </DropdownMenuItem>
+                )}
                 {alert.active && (
                   <DropdownMenuItem 
                     onClick={() => onTogglePause(alert.id, !alert.paused)}
@@ -138,7 +149,7 @@ export function AlertCard({ alert, onTogglePause, onDelete, onEdit }: AlertCardP
                     {alert.paused ? (
                       <>
                         <Play className="w-4 h-4 mr-2" />
-                        Reativar
+                        Retomar
                       </>
                     ) : (
                       <>
