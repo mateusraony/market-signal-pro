@@ -16,7 +16,7 @@ import { Bell, Search, Filter, Plus, Loader2, PauseCircle, PlayCircle } from 'lu
 import { useState } from 'react';
 
 export function AlertsPage() {
-  const { alerts, isLoading, togglePause, deleteAlert, pauseAll, resumeAll } = useAlerts();
+  const { alerts, isLoading, togglePause, deleteAlert, reactivateAlert, pauseAll, resumeAll } = useAlerts();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -180,6 +180,7 @@ export function AlertsPage() {
               onTogglePause={(id, paused) => togglePause.mutate({ id, paused })}
               onDelete={handleDelete}
               onEdit={handleEdit}
+              onReactivate={(id) => reactivateAlert.mutate(id)}
             />
           ))}
         </div>
