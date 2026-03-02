@@ -3,17 +3,33 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-function isAuthorizedInternal(req: Request): boolean {
+function isAuthorized(req: Request): boolean {
   const authHeader = req.headers.get('authorization') || '';
   const token = authHeader.replace('Bearer ', '');
-  // Accept service role key or the cron job (which sends service role key)
-  return token === SUPABASE_SERVICE_ROLE_KEY;
+  
+  // Accept service role key (cron/internal)
+  if (token === SUPABASE_SERVICE_ROLE_KEY) return true;
+  
+  // Accept valid Supabase anon JWT (client manual trigger)
+  try {
+    const parts = token.split('.');
+    if (parts.length === 3) {
+      const payload = JSON.parse(atob(parts[1]));
+      if (payload.iss === 'supabase' && payload.role === 'anon') {
+        return true;
+      }
+    }
+  } catch {
+    // Invalid token format
+  }
+  
+  return false;
 }
 
 serve(async (req) => {
@@ -21,8 +37,8 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
-  // Only allow authorized internal calls
-  if (!isAuthorizedInternal(req)) {
+  // Only allow authorized calls (service role or anon key)
+  if (!isAuthorized(req)) {
     return new Response(
       JSON.stringify({ error: 'Unauthorized' }),
       { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
