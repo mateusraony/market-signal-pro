@@ -270,7 +270,10 @@ async function fetchMarketData(
     // Fetch candles
     const marketResponse = await fetch(`${supabaseUrl}/functions/v1/fetch-market-data`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      },
       body: JSON.stringify({ symbol, exchange, timeframe, limit: 100 }),
     });
 
@@ -291,7 +294,10 @@ async function fetchMarketData(
     // Calculate indicators
     const indicatorResponse = await fetch(`${supabaseUrl}/functions/v1/calculate-indicators`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      },
       body: JSON.stringify({ candles }),
     });
 
@@ -323,7 +329,10 @@ async function sendTelegramAlert(
   try {
     const response = await fetch(`${supabaseUrl}/functions/v1/send-telegram`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      },
       body: JSON.stringify({ chatId, alert: alertData }),
     });
 
@@ -334,9 +343,23 @@ async function sendTelegramAlert(
   }
 }
 
+function isAuthorizedInternal(req: Request): boolean {
+  const authHeader = req.headers.get('authorization') || '';
+  const token = authHeader.replace('Bearer ', '');
+  return token === SUPABASE_SERVICE_ROLE_KEY;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
+  }
+
+  // Only allow calls with service role key (from scheduler or internal)
+  if (!isAuthorizedInternal(req)) {
+    return new Response(
+      JSON.stringify({ error: 'Unauthorized' }),
+      { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   }
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);

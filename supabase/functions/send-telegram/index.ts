@@ -1,10 +1,14 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
 const TELEGRAM_BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN');
 
 interface AlertMessage {
@@ -147,6 +151,10 @@ serve(async (req) => {
   }
 
   try {
+    const authHeader = req.headers.get('authorization') || '';
+    const token = authHeader.replace('Bearer ', '');
+    const isServiceRole = token === SUPABASE_SERVICE_ROLE_KEY;
+
     const body = await req.json();
     const { chatId, alert, rawMessage } = body;
 
@@ -155,6 +163,23 @@ serve(async (req) => {
         JSON.stringify({ error: 'chatId is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    // If not service role, validate that chatId belongs to a known user profile
+    if (!isServiceRole) {
+      const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('telegram_id')
+        .eq('telegram_id', chatId)
+        .maybeSingle();
+
+      if (!profile) {
+        return new Response(
+          JSON.stringify({ error: 'Unauthorized: chatId not registered' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
     }
 
     let message: string;
