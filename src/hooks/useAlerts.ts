@@ -3,12 +3,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { Alert, AlertType, AlertTimeframe, TriggerMode, AlertParams } from '@/types/alerts';
 import { toast } from 'sonner';
 import { Json } from '@/integrations/supabase/types';
-
-// Fixed user ID for single-user app (will be used by Telegram bot later)
-const DEFAULT_USER_ID = '00000000-0000-0000-0000-000000000001';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function useAlerts() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const alertsQuery = useQuery({
     queryKey: ['alerts'],
@@ -24,6 +23,7 @@ export function useAlerts() {
         params: item.params as unknown as AlertParams,
       })) as Alert[];
     },
+    enabled: !!user,
   });
 
   const createAlert = useMutation({
@@ -35,10 +35,11 @@ export function useAlerts() {
       params: AlertParams;
       mode: TriggerMode;
     }) => {
+      if (!user) throw new Error('Not authenticated');
       const { data, error } = await supabase
         .from('alerts')
         .insert({
-          user_id: DEFAULT_USER_ID,
+          user_id: user.id,
           symbol: alert.symbol.toUpperCase(),
           exchange: alert.exchange.toLowerCase(),
           type: alert.type,

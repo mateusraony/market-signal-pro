@@ -8,10 +8,12 @@ import {
   PauseCircle,
   PlayCircle,
   Menu,
-  BarChart3
+  BarChart3,
+  LogOut
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -31,7 +33,7 @@ export function DashboardLayout({
   isPanicMode = false
 }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
+  const { user, signOut } = useAuth();
   const navItems = [
     { id: 'dashboard' as const, label: 'Dashboard', icon: BarChart3 },
     { id: 'alerts' as const, label: 'Alertas', icon: Bell },
@@ -113,6 +115,24 @@ export function DashboardLayout({
                   Pausar Todos
                 </>
               )}
+            </Button>
+          </div>
+
+          {/* User & Logout */}
+          <div className="p-4 border-t border-sidebar-border space-y-2">
+            {user && (
+              <p className="text-xs text-muted-foreground truncate px-2 mb-2">
+                {user.email}
+              </p>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full justify-start gap-2"
+              onClick={signOut}
+            >
+              <LogOut className="w-4 h-4" />
+              Sair
             </Button>
           </div>
 
