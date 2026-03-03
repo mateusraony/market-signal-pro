@@ -446,7 +446,11 @@ serve(async (req) => {
             const quietStart = profile.quiet_hours_start;
             const quietEnd = profile.quiet_hours_end;
             
-            if (nowInTz >= quietStart || nowInTz <= quietEnd) {
+            // Handle overnight ranges (e.g. 22:00-07:00) vs same-day (e.g. 01:00-06:00)
+            const isQuiet = quietStart <= quietEnd
+              ? (nowInTz >= quietStart && nowInTz <= quietEnd)
+              : (nowInTz >= quietStart || nowInTz <= quietEnd);
+            if (isQuiet) {
               console.log(`Alert ${alert.id} skipped due to quiet hours`);
               continue;
             }
