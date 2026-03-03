@@ -16,12 +16,12 @@ function isAuthorized(req: Request): boolean {
   // Accept service role key (cron/internal)
   if (token === SUPABASE_SERVICE_ROLE_KEY) return true;
   
-  // Accept valid Supabase anon JWT (client manual trigger)
+  // Accept valid authenticated JWT (not just anon)
   try {
     const parts = token.split('.');
     if (parts.length === 3) {
       const payload = JSON.parse(atob(parts[1]));
-      if (payload.iss === 'supabase' && payload.role === 'anon') {
+      if (payload.iss === 'supabase' && payload.sub && payload.role === 'authenticated') {
         return true;
       }
     }

@@ -2,30 +2,29 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Profile } from '@/types/alerts';
 import { toast } from 'sonner';
-
-// Fixed user ID for single-user app
-const DEFAULT_USER_ID = '00000000-0000-0000-0000-000000000001';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function useProfile() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const profileQuery = useQuery({
     queryKey: ['profile'],
     queryFn: async () => {
-      // Try to get existing profile
+      if (!user) throw new Error('Not authenticated');
+      
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('user_id', DEFAULT_USER_ID)
+        .eq('user_id', user.id)
         .maybeSingle();
       
       if (error) throw error;
       
-      // If no profile exists, create one
       if (!data) {
         const { data: newProfile, error: insertError } = await supabase
           .from('profiles')
-          .insert({ user_id: DEFAULT_USER_ID })
+          .insert({ user_id: user.id })
           .select()
           .single();
         
@@ -35,14 +34,16 @@ export function useProfile() {
       
       return data as Profile;
     },
+    enabled: !!user,
   });
 
   const updateProfile = useMutation({
     mutationFn: async (updates: Partial<Profile>) => {
+      if (!user) throw new Error('Not authenticated');
       const { data, error } = await supabase
         .from('profiles')
         .update(updates)
-        .eq('user_id', DEFAULT_USER_ID)
+        .eq('user_id', user.id)
         .select()
         .single();
       

@@ -155,6 +155,29 @@ serve(async (req) => {
     const token = authHeader.replace('Bearer ', '');
     const isServiceRole = token === SUPABASE_SERVICE_ROLE_KEY;
 
+    // Validate caller is authenticated or service role
+    let callerUserId: string | null = null;
+    if (!isServiceRole) {
+      try {
+        const parts = token.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(atob(parts[1]));
+          if (payload.iss === 'supabase' && payload.sub && payload.role === 'authenticated') {
+            callerUserId = payload.sub;
+          }
+        }
+      } catch {
+        // invalid token
+      }
+      
+      if (!callerUserId) {
+        return new Response(
+          JSON.stringify({ error: 'Unauthorized' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
     const body = await req.json();
     const { chatId, alert, rawMessage } = body;
 
@@ -165,18 +188,19 @@ serve(async (req) => {
       );
     }
 
-    // If not service role, validate that chatId belongs to a known user profile
-    if (!isServiceRole) {
+    // If not service role, validate that chatId belongs to the authenticated user's profile
+    if (!isServiceRole && callerUserId) {
       const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
       const { data: profile } = await supabase
         .from('profiles')
         .select('telegram_id')
+        .eq('user_id', callerUserId)
         .eq('telegram_id', chatId)
         .maybeSingle();
 
       if (!profile) {
         return new Response(
-          JSON.stringify({ error: 'Unauthorized: chatId not registered' }),
+          JSON.stringify({ error: 'Unauthorized: chatId not registered to your profile' }),
           { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }

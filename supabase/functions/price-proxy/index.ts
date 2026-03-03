@@ -10,6 +10,35 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
+  // Validate authentication - require authenticated user or service role
+  const authHeader = req.headers.get('authorization') || '';
+  const token = authHeader.replace('Bearer ', '');
+  const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  let authorized = false;
+
+  if (token === SUPABASE_SERVICE_ROLE_KEY) {
+    authorized = true;
+  } else {
+    try {
+      const parts = token.split('.');
+      if (parts.length === 3) {
+        const payload = JSON.parse(atob(parts[1]));
+        if (payload.iss === 'supabase' && payload.sub && (payload.role === 'authenticated' || payload.role === 'anon')) {
+          authorized = true;
+        }
+      }
+    } catch {
+      // invalid token
+    }
+  }
+
+  if (!authorized) {
+    return new Response(
+      JSON.stringify({ error: 'Unauthorized' }),
+      { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
   try {
     const { action, symbol, symbols } = await req.json();
 
