@@ -158,16 +158,18 @@ serve(async (req) => {
     // Validate caller is authenticated or service role
     let callerUserId: string | null = null;
     if (!isServiceRole) {
-      try {
-        const parts = token.split('.');
-        if (parts.length === 3) {
-          const payload = JSON.parse(atob(parts[1]));
-          if (payload.iss === 'supabase' && payload.sub && payload.role === 'authenticated') {
-            callerUserId = payload.sub;
+      if (authHeader.startsWith('Bearer ')) {
+        try {
+          const authClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+            global: { headers: { Authorization: authHeader } },
+          });
+          const { data, error } = await authClient.auth.getClaims(token);
+          if (!error && data?.claims?.sub && data.claims.role === 'authenticated') {
+            callerUserId = data.claims.sub as string;
           }
+        } catch {
+          // invalid token
         }
-      } catch {
-        // invalid token
       }
       
       if (!callerUserId) {

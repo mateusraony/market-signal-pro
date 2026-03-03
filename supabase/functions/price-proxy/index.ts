@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -10,22 +11,24 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
-  // Validate authentication - require authenticated user or service role
   const authHeader = req.headers.get('authorization') || '';
   const token = authHeader.replace('Bearer ', '');
   const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+  const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
+
   let authorized = false;
 
   if (token === SUPABASE_SERVICE_ROLE_KEY) {
     authorized = true;
-  } else {
+  } else if (authHeader.startsWith('Bearer ')) {
     try {
-      const parts = token.split('.');
-      if (parts.length === 3) {
-        const payload = JSON.parse(atob(parts[1]));
-        if (payload.iss === 'supabase' && payload.sub && (payload.role === 'authenticated' || payload.role === 'anon')) {
-          authorized = true;
-        }
+      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data, error } = await supabase.auth.getClaims(token);
+      if (!error && data?.claims?.sub) {
+        authorized = true;
       }
     } catch {
       // invalid token
