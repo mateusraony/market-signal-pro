@@ -9,24 +9,26 @@ const corsHeaders = {
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-function isAuthorized(req: Request): boolean {
+async function isAuthorized(req: Request): Promise<boolean> {
   const authHeader = req.headers.get('authorization') || '';
   const token = authHeader.replace('Bearer ', '');
   
   // Accept service role key (cron/internal)
   if (token === SUPABASE_SERVICE_ROLE_KEY) return true;
   
-  // Accept valid authenticated JWT (not just anon)
-  try {
-    const parts = token.split('.');
-    if (parts.length === 3) {
-      const payload = JSON.parse(atob(parts[1]));
-      if (payload.iss === 'supabase' && payload.sub && payload.role === 'authenticated') {
+  // Accept valid authenticated JWT
+  if (authHeader.startsWith('Bearer ')) {
+    try {
+      const supabase = createClient(SUPABASE_URL, Deno.env.get('SUPABASE_ANON_KEY')!, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data, error } = await supabase.auth.getClaims(token);
+      if (!error && data?.claims?.sub && data.claims.role === 'authenticated') {
         return true;
       }
+    } catch {
+      // Invalid token
     }
-  } catch {
-    // Invalid token format
   }
   
   return false;
@@ -38,7 +40,7 @@ serve(async (req) => {
   }
 
   // Only allow authorized calls (service role or anon key)
-  if (!isAuthorized(req)) {
+  if (!(await isAuthorized(req))) {
     return new Response(
       JSON.stringify({ error: 'Unauthorized' }),
       { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
