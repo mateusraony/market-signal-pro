@@ -5,16 +5,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Activity, Loader2, Mail, Lock } from 'lucide-react';
+import { Activity, Loader2, Mail, Lock, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Auth() {
-  const { user, loading } = useAuth();
-  const [isLogin, setIsLogin] = useState(true);
+  const { user, loading, signIn, signUp, resetPassword } = useAuth();
+  const [mode, setMode] = useState<'login' | 'signup' | 'forgot'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const { signIn, signUp } = useAuth();
 
   if (loading) {
     return (
@@ -28,6 +27,26 @@ export default function Auth() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (mode === 'forgot') {
+      if (!email) {
+        toast.error('Preencha o email');
+        return;
+      }
+      setSubmitting(true);
+      try {
+        const { error } = await resetPassword(email);
+        if (error) {
+          toast.error(error.message);
+        } else {
+          toast.success('Email de recuperação enviado! Verifique sua caixa de entrada.');
+        }
+      } finally {
+        setSubmitting(false);
+      }
+      return;
+    }
+
     if (!email || !password) {
       toast.error('Preencha todos os campos');
       return;
@@ -39,7 +58,7 @@ export default function Auth() {
 
     setSubmitting(true);
     try {
-      if (isLogin) {
+      if (mode === 'login') {
         const { error } = await signIn(email, password);
         if (error) {
           toast.error(error.message);
@@ -67,11 +86,22 @@ export default function Auth() {
           <div>
             <CardTitle className="text-2xl font-mono">AlertStation</CardTitle>
             <CardDescription className="mt-1">
-              {isLogin ? 'Entre na sua conta' : 'Crie sua conta'}
+              {mode === 'login' && 'Entre na sua conta'}
+              {mode === 'signup' && 'Crie sua conta'}
+              {mode === 'forgot' && 'Recupere sua senha'}
             </CardDescription>
           </div>
         </CardHeader>
         <CardContent>
+          {mode === 'forgot' && (
+            <button
+              type="button"
+              onClick={() => setMode('login')}
+              className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors mb-4"
+            >
+              <ArrowLeft className="w-3 h-3" /> Voltar ao login
+            </button>
+          )}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
@@ -88,36 +118,58 @@ export default function Auth() {
                 />
               </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10"
-                  autoComplete={isLogin ? 'current-password' : 'new-password'}
-                />
+            {mode !== 'forgot' && (
+              <div className="space-y-2">
+                <Label htmlFor="password">Senha</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pl-10"
+                    autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                  />
+                </div>
               </div>
-            </div>
+            )}
             <Button type="submit" className="w-full glow-primary" disabled={submitting}>
-              {submitting ? (
-                <Loader2 className="w-4 h-4 animate-spin mr-2" />
-              ) : null}
-              {isLogin ? 'Entrar' : 'Criar Conta'}
+              {submitting && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+              {mode === 'login' && 'Entrar'}
+              {mode === 'signup' && 'Criar Conta'}
+              {mode === 'forgot' && 'Enviar Email de Recuperação'}
             </Button>
           </form>
-          <div className="mt-4 text-center">
-            <button
-              type="button"
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-sm text-muted-foreground hover:text-primary transition-colors"
-            >
-              {isLogin ? 'Não tem conta? Criar uma' : 'Já tem conta? Entrar'}
-            </button>
+          <div className="mt-4 text-center space-y-2">
+            {mode === 'login' && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setMode('forgot')}
+                  className="text-sm text-muted-foreground hover:text-primary transition-colors block w-full"
+                >
+                  Esqueceu sua senha?
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMode('signup')}
+                  className="text-sm text-muted-foreground hover:text-primary transition-colors block w-full"
+                >
+                  Não tem conta? Criar uma
+                </button>
+              </>
+            )}
+            {mode === 'signup' && (
+              <button
+                type="button"
+                onClick={() => setMode('login')}
+                className="text-sm text-muted-foreground hover:text-primary transition-colors"
+              >
+                Já tem conta? Entrar
+              </button>
+            )}
           </div>
         </CardContent>
       </Card>
