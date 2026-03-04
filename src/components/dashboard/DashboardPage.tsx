@@ -14,7 +14,7 @@ export function DashboardPage() {
     const symbolMap = new Map<string, { symbol: string; exchange: string; targetPrice?: number }>();
     
     alerts
-      .filter(a => a.active && !a.paused && (a.exchange === 'binance' || a.exchange === 'bybit'))
+      .filter(a => a.active && !a.paused)
       .forEach(alert => {
         const key = `${alert.symbol}-${alert.exchange}`;
         if (!symbolMap.has(key)) {

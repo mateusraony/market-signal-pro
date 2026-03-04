@@ -10,8 +10,7 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const TELEGRAM_BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN');
 
-// In-memory store for previous prices (persists across invocations within the same instance)
-const previousPriceStore = new Map<string, number>();
+// Previous prices are now persisted in the price_cache table to survive cold starts
 
 interface Alert {
   id: string;
@@ -416,9 +415,14 @@ serve(async (req) => {
 
       console.log(`Data for ${symbol}: price=${marketData.price}, rsi=${marketData.rsi}, macd=${marketData.macd?.line}`);
 
-      // Get previous price for this symbol from in-memory store
+      // Get previous price from DB cache (survives cold starts)
       const priceKey = `${symbol}-${exchange}`;
-      const previousPrice = previousPriceStore.get(priceKey) ?? null;
+      const { data: cachedPrice } = await supabase
+        .from('price_cache')
+        .select('last_price')
+        .eq('symbol_exchange', priceKey)
+        .single();
+      const previousPrice = cachedPrice?.last_price ?? null;
       
       for (const alert of groupAlerts) {
         const result = checkAlertCondition(alert, marketData, previousPrice);
@@ -536,8 +540,10 @@ serve(async (req) => {
         }
       }
       
-      // Store current price for next iteration (for cross detection)
-      previousPriceStore.set(priceKey, marketData.price);
+      // Persist current price in DB for cross detection (survives cold starts)
+      await supabase
+        .from('price_cache')
+        .upsert({ symbol_exchange: priceKey, last_price: marketData.price, updated_at: new Date().toISOString() });
     }
 
     console.log(`Processing complete. ${triggeredAlerts.length} alerts triggered.`);
