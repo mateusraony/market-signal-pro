@@ -16,7 +16,7 @@ interface UsePriceHistoryReturn {
   low24h: number | null;
 }
 
-export function usePriceHistory(symbol: string, maxPoints: number = 60): UsePriceHistoryReturn {
+export function usePriceHistory(symbol: string, exchange?: string, maxPoints: number = 60): UsePriceHistoryReturn {
   const [priceHistory, setPriceHistory] = useState<PricePoint[]>([]);
   const [currentPrice, setCurrentPrice] = useState<number | null>(null);
   const [change24h, setChange24h] = useState<number | null>(null);
@@ -35,7 +35,7 @@ export function usePriceHistory(symbol: string, maxPoints: number = 60): UsePric
   const fetchPrice = useCallback(async () => {
     try {
       const { data, error } = await supabase.functions.invoke('price-proxy', {
-        body: { action: 'ticker', symbol: symbol.toUpperCase() },
+        body: { action: 'ticker', symbol: symbol.toUpperCase(), exchange },
       });
 
       if (error) throw error;
@@ -65,7 +65,7 @@ export function usePriceHistory(symbol: string, maxPoints: number = 60): UsePric
     } catch (error) {
       console.error('Price proxy error:', error);
     }
-  }, [symbol, maxPoints, formatTime]);
+  }, [symbol, exchange, maxPoints, formatTime]);
 
   useEffect(() => {
     if (!symbol) return;
