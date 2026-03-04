@@ -101,13 +101,45 @@ serve(async (req) => {
   }
 
   try {
-    const { action, symbol, symbols } = await req.json();
+    const { action, symbol, symbols, exchange } = await req.json();
 
     if (action === 'ticker' && symbol) {
       // Check if forex/commodity symbol
       if (isForexSymbol(symbol)) {
         const data = await fetchYahooTicker(symbol);
         return new Response(JSON.stringify(data), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Bybit exchange
+      if (exchange === 'bybit') {
+        const response = await fetch(
+          `https://api.bybit.com/v5/market/tickers?category=spot&symbol=${symbol.toUpperCase()}`
+        );
+        if (!response.ok) {
+          const errorText = await response.text();
+          return new Response(
+            JSON.stringify({ error: `Bybit API error: ${response.status}`, details: errorText }),
+            { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        const data = await response.json();
+        if (data.retCode !== 0 || !data.result?.list?.length) {
+          return new Response(
+            JSON.stringify({ error: `No Bybit data for ${symbol}` }),
+            { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        const ticker = data.result.list[0];
+        return new Response(JSON.stringify({
+          symbol: ticker.symbol,
+          lastPrice: ticker.lastPrice,
+          priceChangePercent: ticker.price24hPcnt ? (parseFloat(ticker.price24hPcnt) * 100).toFixed(3) : '0',
+          highPrice: ticker.highPrice24h,
+          lowPrice: ticker.lowPrice24h,
+          volume: ticker.volume24h,
+        }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
@@ -132,25 +164,60 @@ serve(async (req) => {
     }
 
     if (action === 'tickers' && symbols && Array.isArray(symbols)) {
-      // Separate forex and crypto symbols
-      const forexSymbols = symbols.filter((s: string) => isForexSymbol(s));
-      const cryptoSymbols = symbols.filter((s: string) => !isForexSymbol(s));
+      // Separate forex, bybit, and binance symbols
+      const forexSyms = symbols.filter((s: any) => isForexSymbol(typeof s === 'string' ? s : s.symbol));
+      const bybitSyms = symbols.filter((s: any) => {
+        if (typeof s === 'object' && s.exchange === 'bybit') return true;
+        return false;
+      });
+      const binanceSyms = symbols.filter((s: any) => {
+        const sym = typeof s === 'string' ? s : s.symbol;
+        if (isForexSymbol(sym)) return false;
+        if (typeof s === 'object' && s.exchange === 'bybit') return false;
+        return true;
+      });
 
       const results: any[] = [];
 
       // Fetch forex symbols in parallel
-      if (forexSymbols.length > 0) {
+      if (forexSyms.length > 0) {
         const forexResults = await Promise.allSettled(
-          forexSymbols.map((s: string) => fetchYahooTicker(s))
+          forexSyms.map((s: any) => fetchYahooTicker(typeof s === 'string' ? s : s.symbol))
         );
         for (const r of forexResults) {
           if (r.status === 'fulfilled') results.push(r.value);
         }
       }
 
+      // Fetch Bybit symbols in parallel
+      if (bybitSyms.length > 0) {
+        const bybitResults = await Promise.allSettled(
+          bybitSyms.map(async (s: any) => {
+            const sym = typeof s === 'string' ? s : s.symbol;
+            const resp = await fetch(`https://api.bybit.com/v5/market/tickers?category=spot&symbol=${sym.toUpperCase()}`);
+            const data = await resp.json();
+            if (data.retCode === 0 && data.result?.list?.length) {
+              const t = data.result.list[0];
+              return {
+                symbol: t.symbol,
+                lastPrice: t.lastPrice,
+                priceChangePercent: t.price24hPcnt ? (parseFloat(t.price24hPcnt) * 100).toFixed(3) : '0',
+                highPrice: t.highPrice24h,
+                lowPrice: t.lowPrice24h,
+                volume: t.volume24h,
+              };
+            }
+            return null;
+          })
+        );
+        for (const r of bybitResults) {
+          if (r.status === 'fulfilled' && r.value) results.push(r.value);
+        }
+      }
+
       // Fetch crypto symbols from Binance
-      if (cryptoSymbols.length > 0) {
-        const symbolsParam = cryptoSymbols.map((s: string) => `"${s.toUpperCase()}"`).join(',');
+      if (binanceSyms.length > 0) {
+        const symbolsParam = binanceSyms.map((s: any) => `"${(typeof s === 'string' ? s : s.symbol).toUpperCase()}"`).join(',');
         const response = await fetch(
           `https://api.binance.com/api/v3/ticker/24hr?symbols=[${symbolsParam}]`
         );
