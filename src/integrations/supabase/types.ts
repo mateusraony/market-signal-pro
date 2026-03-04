@@ -154,6 +154,24 @@ export type Database = {
           },
         ]
       }
+      price_cache: {
+        Row: {
+          last_price: number
+          symbol_exchange: string
+          updated_at: string
+        }
+        Insert: {
+          last_price: number
+          symbol_exchange: string
+          updated_at?: string
+        }
+        Update: {
+          last_price?: number
+          symbol_exchange?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
