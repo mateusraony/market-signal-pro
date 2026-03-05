@@ -163,9 +163,9 @@ serve(async (req) => {
           const authClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
             global: { headers: { Authorization: authHeader } },
           });
-          const { data, error } = await authClient.auth.getClaims(token);
-          if (!error && data?.claims?.sub && data.claims.role === 'authenticated') {
-            callerUserId = data.claims.sub as string;
+          const { data: { user }, error } = await authClient.auth.getUser(token);
+          if (!error && user) {
+            callerUserId = user.id;
           }
         } catch {
           // invalid token
