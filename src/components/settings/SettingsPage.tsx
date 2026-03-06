@@ -8,6 +8,7 @@ import { Settings, MessageCircle, Clock, Loader2, Volume2, Bell } from 'lucide-r
 import { useState, useEffect } from 'react';
 import { SystemStatus } from './SystemStatus';
 import { SchedulerHistory } from './SchedulerHistory';
+import { SchedulerLatencyChart } from './SchedulerLatencyChart';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -101,6 +102,9 @@ export function SettingsPage() {
 
       {/* System Status */}
       <SystemStatus />
+
+      {/* Scheduler Latency Chart */}
+      <SchedulerLatencyChart />
 
       {/* Scheduler History */}
       <SchedulerHistory />
