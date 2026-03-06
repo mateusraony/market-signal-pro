@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Settings, MessageCircle, Clock, Loader2, Volume2, Bell } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { SystemStatus } from './SystemStatus';
+import { SchedulerHistory } from './SchedulerHistory';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
