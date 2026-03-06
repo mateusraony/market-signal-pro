@@ -102,6 +102,9 @@ export function SettingsPage() {
       {/* System Status */}
       <SystemStatus />
 
+      {/* Scheduler History */}
+      <SchedulerHistory />
+
       {/* Sound Test */}
       <Card>
         <CardHeader>
