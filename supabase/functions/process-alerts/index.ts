@@ -523,6 +523,7 @@ serve(async (req) => {
 
           // Send Telegram notification
           if (profile?.telegram_id) {
+            console.log(`[Alert ${alert.id}] Sending Telegram notification to ${profile.telegram_id}`);
             const alertData = {
               symbol: alert.symbol,
               type: alert.type,
@@ -537,7 +538,10 @@ serve(async (req) => {
               probDown: result.probDown,
             };
 
-            await sendTelegramAlert(SUPABASE_URL, profile.telegram_id, alertData);
+            const telegramSent = await sendTelegramAlert(SUPABASE_URL, profile.telegram_id, alertData);
+            console.log(`[Alert ${alert.id}] Telegram result: ${telegramSent ? 'SUCCESS' : 'FAILED'}`);
+          } else {
+            console.log(`[Alert ${alert.id}] No telegram_id configured for user ${alert.user_id}, skipping notification`);
           }
 
           // Update alert based on mode

@@ -103,6 +103,9 @@ export function SettingsPage() {
       {/* System Status */}
       <SystemStatus />
 
+      {/* Scheduler Latency Chart */}
+      <SchedulerLatencyChart />
+
       {/* Scheduler History */}
       <SchedulerHistory />
 
