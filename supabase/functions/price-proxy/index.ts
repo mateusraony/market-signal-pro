@@ -35,33 +35,82 @@ async function fetchYahooTicker(symbol: string): Promise<any> {
   const yahooSymbol = forexSymbolMap[symbol.toUpperCase()];
   if (!yahooSymbol) throw new Error(`Unknown forex symbol: ${symbol}`);
 
-  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSymbol}?interval=1d&range=2d`;
-  const response = await fetch(url, {
-    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
-  });
+  const encodedSymbol = encodeURIComponent(yahooSymbol);
+  const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
-  if (!response.ok) throw new Error(`Yahoo Finance API error: ${response.status}`);
+  // Try multiple Yahoo Finance endpoints as fallbacks
+  const endpoints = [
+    `https://query2.finance.yahoo.com/v8/finance/chart/${encodedSymbol}?interval=1d&range=2d`,
+    `https://query1.finance.yahoo.com/v8/finance/chart/${encodedSymbol}?interval=1d&range=2d`,
+    `https://query2.finance.yahoo.com/v6/finance/quote?symbols=${encodedSymbol}`,
+  ];
 
-  const data = await response.json();
-  const result = data.chart?.result?.[0];
-  if (!result?.meta?.regularMarketPrice) throw new Error(`No data for ${symbol}`);
+  let lastError: Error | null = null;
 
-  const meta = result.meta;
-  const prevClose = meta.chartPreviousClose || meta.previousClose || meta.regularMarketPrice;
-  const lastPrice = meta.regularMarketPrice;
-  const priceChange = lastPrice - prevClose;
-  const priceChangePercent = prevClose ? ((priceChange / prevClose) * 100) : 0;
+  for (const url of endpoints) {
+    try {
+      const response = await fetch(url, {
+        headers: { 'User-Agent': userAgent },
+      });
 
-  return {
-    symbol: symbol.toUpperCase(),
-    lastPrice: String(lastPrice),
-    priceChange: String(priceChange.toFixed(5)),
-    priceChangePercent: String(priceChangePercent.toFixed(3)),
-    highPrice: String(meta.regularMarketDayHigh || lastPrice),
-    lowPrice: String(meta.regularMarketDayLow || lastPrice),
-    openPrice: String(prevClose),
-    volume: String(meta.regularMarketVolume || 0),
-  };
+      if (!response.ok) {
+        await response.text(); // consume body
+        lastError = new Error(`Yahoo API ${response.status} for ${url}`);
+        continue;
+      }
+
+      const data = await response.json();
+
+      // v8 chart response
+      if (data.chart?.result?.[0]) {
+        const result = data.chart.result[0];
+        const meta = result.meta;
+        if (!meta?.regularMarketPrice) continue;
+
+        const prevClose = meta.chartPreviousClose || meta.previousClose || meta.regularMarketPrice;
+        const lastPrice = meta.regularMarketPrice;
+        const priceChange = lastPrice - prevClose;
+        const priceChangePercent = prevClose ? ((priceChange / prevClose) * 100) : 0;
+
+        return {
+          symbol: symbol.toUpperCase(),
+          lastPrice: String(lastPrice),
+          priceChange: String(priceChange.toFixed(5)),
+          priceChangePercent: String(priceChangePercent.toFixed(3)),
+          highPrice: String(meta.regularMarketDayHigh || lastPrice),
+          lowPrice: String(meta.regularMarketDayLow || lastPrice),
+          openPrice: String(prevClose),
+          volume: String(meta.regularMarketVolume || 0),
+        };
+      }
+
+      // v6 quote response
+      if (data.quoteResponse?.result?.[0]) {
+        const quote = data.quoteResponse.result[0];
+        const lastPrice = quote.regularMarketPrice;
+        const prevClose = quote.regularMarketPreviousClose || lastPrice;
+        const priceChange = lastPrice - prevClose;
+        const priceChangePercent = prevClose ? ((priceChange / prevClose) * 100) : 0;
+
+        return {
+          symbol: symbol.toUpperCase(),
+          lastPrice: String(lastPrice),
+          priceChange: String(priceChange.toFixed(5)),
+          priceChangePercent: String(priceChangePercent.toFixed(3)),
+          highPrice: String(quote.regularMarketDayHigh || lastPrice),
+          lowPrice: String(quote.regularMarketDayLow || lastPrice),
+          openPrice: String(prevClose),
+          volume: String(quote.regularMarketVolume || 0),
+        };
+      }
+
+      lastError = new Error(`No valid data in response for ${symbol}`);
+    } catch (e) {
+      lastError = e instanceof Error ? e : new Error(String(e));
+    }
+  }
+
+  throw lastError || new Error(`All Yahoo Finance endpoints failed for ${symbol}`);
 }
 
 serve(async (req) => {
@@ -84,8 +133,8 @@ serve(async (req) => {
       const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
         global: { headers: { Authorization: authHeader } },
       });
-      const { data, error } = await supabase.auth.getClaims(token);
-      if (!error && data?.claims?.sub) {
+      const { data: { user }, error } = await supabase.auth.getUser(token);
+      if (!error && user) {
         authorized = true;
       }
     } catch {
