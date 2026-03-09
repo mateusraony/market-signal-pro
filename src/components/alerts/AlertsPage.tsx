@@ -208,6 +208,24 @@ export function AlertsPage() {
         open={!!editingAlert}
         onOpenChange={(open) => !open && setEditingAlert(null)}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deletingAlertId} onOpenChange={(open) => !open && setDeletingAlertId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir alerta</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este alerta? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
