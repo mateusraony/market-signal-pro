@@ -31,6 +31,7 @@ export function AlertsPage() {
   const [filterType, setFilterType] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [editingAlert, setEditingAlert] = useState<Alert | null>(null);
+  const [deletingAlertId, setDeletingAlertId] = useState<string | null>(null);
 
   const filteredAlerts = alerts.filter((alert) => {
     const matchesSearch = alert.symbol.toLowerCase().includes(searchTerm.toLowerCase());
@@ -42,8 +43,13 @@ export function AlertsPage() {
   });
 
   const handleDelete = (id: string) => {
-    if (window.confirm('Tem certeza que deseja excluir este alerta?')) {
-      deleteAlert.mutate(id);
+    setDeletingAlertId(id);
+  };
+
+  const confirmDelete = () => {
+    if (deletingAlertId) {
+      deleteAlert.mutate(deletingAlertId);
+      setDeletingAlertId(null);
     }
   };
 
