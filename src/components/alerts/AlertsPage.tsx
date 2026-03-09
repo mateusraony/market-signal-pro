@@ -12,6 +12,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Bell, Search, Filter, Plus, Loader2, PauseCircle, PlayCircle } from 'lucide-react';
 import { useState } from 'react';
 
@@ -21,6 +31,7 @@ export function AlertsPage() {
   const [filterType, setFilterType] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [editingAlert, setEditingAlert] = useState<Alert | null>(null);
+  const [deletingAlertId, setDeletingAlertId] = useState<string | null>(null);
 
   const filteredAlerts = alerts.filter((alert) => {
     const matchesSearch = alert.symbol.toLowerCase().includes(searchTerm.toLowerCase());
@@ -32,8 +43,13 @@ export function AlertsPage() {
   });
 
   const handleDelete = (id: string) => {
-    if (window.confirm('Tem certeza que deseja excluir este alerta?')) {
-      deleteAlert.mutate(id);
+    setDeletingAlertId(id);
+  };
+
+  const confirmDelete = () => {
+    if (deletingAlertId) {
+      deleteAlert.mutate(deletingAlertId);
+      setDeletingAlertId(null);
     }
   };
 
@@ -192,6 +208,24 @@ export function AlertsPage() {
         open={!!editingAlert}
         onOpenChange={(open) => !open && setEditingAlert(null)}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deletingAlertId} onOpenChange={(open) => !open && setDeletingAlertId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir alerta</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este alerta? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
