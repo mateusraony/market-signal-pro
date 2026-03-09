@@ -133,8 +133,8 @@ serve(async (req) => {
       const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
         global: { headers: { Authorization: authHeader } },
       });
-      const { data, error } = await supabase.auth.getClaims(token);
-      if (!error && data?.claims?.sub) {
+      const { data: { user }, error } = await supabase.auth.getUser(token);
+      if (!error && user) {
         authorized = true;
       }
     } catch {
