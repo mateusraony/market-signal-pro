@@ -1,0 +1,2 @@
+ALTER TABLE public.alerts_history DROP CONSTRAINT alerts_history_alert_id_fkey;
+ALTER TABLE public.alerts_history ADD CONSTRAINT alerts_history_alert_id_fkey FOREIGN KEY (alert_id) REFERENCES public.alerts(id) ON DELETE SET NULL;
