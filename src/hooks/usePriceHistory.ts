@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface PricePoint {
@@ -64,11 +64,20 @@ export function usePriceHistory(symbol: string, exchange?: string, maxPoints: nu
       });
     } catch (error) {
       console.error('Price proxy error:', error);
+      setIsConnected(false);
     }
   }, [symbol, exchange, maxPoints, formatTime]);
 
   useEffect(() => {
-    if (!symbol) return;
+    if (!symbol) {
+      setPriceHistory([]);
+      setCurrentPrice(null);
+      setChange24h(null);
+      setHigh24h(null);
+      setLow24h(null);
+      setIsConnected(false);
+      return;
+    }
 
     fetchPrice();
     const interval = setInterval(fetchPrice, 5000);

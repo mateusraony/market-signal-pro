@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAlertsHistory } from '@/hooks/useAlertsHistory';
 import { AlertHistory, AlertType, AlertTimeframe, formatAlertType, formatTimeframe } from '@/types/alerts';
-import { formatToBRT, formatRelativeTime, formatPrice, formatRSI, getRSIColor, getDirectionColor } from '@/lib/format';
+import { formatToBRT, formatRelativeTime, formatPrice, formatRSI, formatProbability, getRSIColor, getDirectionColor } from '@/lib/format';
 import { exportHistoryToCSV } from '@/lib/exportCSV';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -250,9 +250,9 @@ export function HistoryPage() {
                   <TableCell>
                     {item.prob_up !== null && (
                       <div className="text-xs">
-                        <span className="text-success">{item.prob_up}%</span>
+                        <span className="text-success">{formatProbability(item.prob_up)}</span>
                         {' / '}
-                        <span className="text-destructive">{item.prob_down}%</span>
+                        <span className="text-destructive">{formatProbability(item.prob_down)}</span>
                       </div>
                     )}
                   </TableCell>

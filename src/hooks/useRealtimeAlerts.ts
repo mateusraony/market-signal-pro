@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { formatAlertType, formatTimeframe } from '@/types/alerts';
 import { useNotificationSound } from './useNotificationSound';
+import { formatProbability } from '@/lib/format';
 
 export function useRealtimeAlerts() {
   const queryClient = useQueryClient();
@@ -32,7 +33,7 @@ export function useRealtimeAlerts() {
           toast.info(
             `🔔 ${newAlert.symbol} - ${formatAlertType(newAlert.type)}`,
             {
-              description: `${direction} | ${newAlert.timeframe ? formatTimeframe(newAlert.timeframe) : 'Preço'} | Prob: ${newAlert.prob_up ?? 50}%↑`,
+              description: `${direction} | ${newAlert.timeframe ? formatTimeframe(newAlert.timeframe) : 'Preço'} | Prob: ${formatProbability(newAlert.prob_up)}↑`,
               duration: 10000,
               action: {
                 label: 'Ver',

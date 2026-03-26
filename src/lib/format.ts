@@ -43,6 +43,11 @@ export function formatPercent(value: number | null): string {
   return `${value.toFixed(1)}%`;
 }
 
+export function formatProbability(value: number | null): string {
+  if (value === null || value === undefined) return '-';
+  return `${(value * 100).toFixed(0)}%`;
+}
+
 export function formatRSI(value: number | null): string {
   if (value === null || value === undefined) return '-';
   return value.toFixed(2);
