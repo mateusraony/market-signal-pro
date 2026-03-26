@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/select';
 import { DollarSign, TrendingUp, BarChart3, Volume2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 interface EditAlertDialogProps {
   alert: Alert | null;
@@ -33,7 +34,7 @@ const POPULAR_SYMBOLS = [
   'DOGEUSDT', 'ADAUSDT', 'AVAXUSDT', 'DOTUSDT', 'LINKUSDT'
 ];
 
-const EXCHANGES = ['binance', 'bybit', 'coinbase'];
+const EXCHANGES = ['binance', 'bybit', 'forex'];
 
 const TIMEFRAMES: { value: AlertTimeframe; label: string }[] = [
   { value: '4h', label: '4 Horas' },
@@ -66,6 +67,27 @@ export function EditAlertDialog({ alert, open, onOpenChange }: EditAlertDialogPr
   const [volumeThreshold, setVolumeThreshold] = useState('200');
   const [volumePeriod, setVolumePeriod] = useState('20');
 
+  const validateNumber = (
+    value: string,
+    fieldLabel: string,
+    options: { min?: number; max?: number } = {}
+  ): number | null => {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) {
+      toast.error(`${fieldLabel} inválido.`);
+      return null;
+    }
+    if (options.min !== undefined && parsed < options.min) {
+      toast.error(`${fieldLabel} deve ser maior ou igual a ${options.min}.`);
+      return null;
+    }
+    if (options.max !== undefined && parsed > options.max) {
+      toast.error(`${fieldLabel} deve ser menor ou igual a ${options.max}.`);
+      return null;
+    }
+    return parsed;
+  };
+
   // Load alert data when it changes
   useEffect(() => {
     if (alert) {
@@ -95,13 +117,17 @@ export function EditAlertDialog({ alert, open, onOpenChange }: EditAlertDialogPr
     let params: AlertParams = {};
     
     if (alert.type === 'price_level') {
+      const parsedTargetPrice = validateNumber(targetPrice, 'Preço alvo', { min: 0.00000001 });
+      if (parsedTargetPrice === null) return;
       params = {
-        target_price: parseFloat(targetPrice),
+        target_price: parsedTargetPrice,
         price_direction: priceDirection,
       };
     } else if (alert.type === 'rsi_level') {
+      const parsedRsiLevel = validateNumber(rsiLevel, 'Nível RSI', { min: 0, max: 100 });
+      if (parsedRsiLevel === null) return;
       params = {
-        rsi_level: parseFloat(rsiLevel),
+        rsi_level: parsedRsiLevel,
         rsi_mode: rsiMode,
       };
     } else if (alert.type === 'macd_cross') {
@@ -109,9 +135,16 @@ export function EditAlertDialog({ alert, open, onOpenChange }: EditAlertDialogPr
         macd_mode: macdMode,
       };
     } else if (alert.type === 'volume_spike') {
+      const parsedVolumeThreshold = validateNumber(volumeThreshold, 'Threshold de volume', { min: 1 });
+      const parsedVolumePeriod = validateNumber(volumePeriod, 'Período de volume', { min: 1 });
+      if (parsedVolumeThreshold === null || parsedVolumePeriod === null) return;
+      if (!Number.isInteger(parsedVolumePeriod)) {
+        toast.error('Período de volume deve ser um número inteiro.');
+        return;
+      }
       params = {
-        volume_threshold: parseFloat(volumeThreshold),
-        volume_period: parseInt(volumePeriod),
+        volume_threshold: parsedVolumeThreshold,
+        volume_period: parsedVolumePeriod,
       };
     }
 

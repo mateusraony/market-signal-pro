@@ -204,7 +204,10 @@ export function useSymbolSearch(exchange: ExchangeType | 'all' = 'all') {
     setSearchTerm,
     symbols: filteredSymbols(),
     isLoading: binanceQuery.isLoading || bybitQuery.isLoading,
-    isError: binanceQuery.isError && bybitQuery.isError,
+    isError:
+      exchange === 'binance' ? binanceQuery.isError :
+      exchange === 'bybit' ? bybitQuery.isError :
+      binanceQuery.isError || bybitQuery.isError,
     defaultSymbols: DEFAULT_SYMBOLS,
   };
 }

@@ -50,13 +50,13 @@ export function useAlertsHistory(filters?: HistoryFilters) {
       
       return data.map(item => ({
         ...item,
-        price_at_event: item.price_at_event ? Number(item.price_at_event) : null,
-        rsi_at_event: item.rsi_at_event ? Number(item.rsi_at_event) : null,
-        macd_line_at_event: item.macd_line_at_event ? Number(item.macd_line_at_event) : null,
-        macd_signal_at_event: item.macd_signal_at_event ? Number(item.macd_signal_at_event) : null,
-        macd_hist_at_event: item.macd_hist_at_event ? Number(item.macd_hist_at_event) : null,
-        prob_up: item.prob_up ? Number(item.prob_up) : null,
-        prob_down: item.prob_down ? Number(item.prob_down) : null,
+        price_at_event: item.price_at_event != null ? Number(item.price_at_event) : null,
+        rsi_at_event: item.rsi_at_event != null ? Number(item.rsi_at_event) : null,
+        macd_line_at_event: item.macd_line_at_event != null ? Number(item.macd_line_at_event) : null,
+        macd_signal_at_event: item.macd_signal_at_event != null ? Number(item.macd_signal_at_event) : null,
+        macd_hist_at_event: item.macd_hist_at_event != null ? Number(item.macd_hist_at_event) : null,
+        prob_up: item.prob_up != null ? Number(item.prob_up) : null,
+        prob_down: item.prob_down != null ? Number(item.prob_down) : null,
       })) as AlertHistory[];
     },
   });

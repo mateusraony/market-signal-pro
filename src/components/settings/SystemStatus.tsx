@@ -56,34 +56,6 @@ export function SystemStatus() {
     }
   };
 
-  const triggerManualRun = async () => {
-    setIsRefreshing(true);
-    try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const accessToken = sessionData?.session?.access_token;
-      
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/scheduler`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${accessToken || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({ source: 'manual' }),
-        }
-      );
-      
-      if (response.ok) {
-        await checkStatus();
-      }
-    } catch (error) {
-      console.error('Error triggering manual run:', error);
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
-
   useEffect(() => {
     checkStatus();
     const interval = setInterval(checkStatus, 60000); // Check every minute
@@ -164,21 +136,14 @@ export function SystemStatus() {
         <Button 
           variant="outline" 
           className="w-full"
-          onClick={triggerManualRun}
-          disabled={isRefreshing}
+          disabled
         >
-          {isRefreshing ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Processando...
-            </>
-          ) : (
-            <>
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Executar Manualmente
-            </>
-          )}
+          <RefreshCw className="w-4 h-4 mr-2" />
+          Execução Manual (somente backend)
         </Button>
+        <p className="text-xs text-muted-foreground">
+          Por segurança, o scheduler aceita apenas chamadas internas com service role key.
+        </p>
       </CardContent>
     </Card>
   );
