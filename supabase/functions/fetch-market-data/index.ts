@@ -282,8 +282,51 @@ function getIntervalMs(interval: string): number {
   return map[interval] || 0;
 }
 
+// Futures support
+function isFuturesSymbol(symbol: string): boolean {
+  const upper = symbol.toUpperCase();
+  return upper.endsWith('PERP') || upper.includes('1!');
+}
+
+function normalizeFuturesSymbol(symbol: string): string {
+  let s = symbol.toUpperCase();
+  if (s.includes('1!')) s = s.replace('1!', 'USDT');
+  if (s.endsWith('PERP')) s = s.replace('PERP', '');
+  if (!s.endsWith('USDT')) s = s + 'USDT';
+  return s;
+}
+
+async function fetchFuturesKlines(symbol: string, interval: string, limit: number = 100): Promise<Candle[]> {
+  const normalized = normalizeFuturesSymbol(symbol);
+  const url = `https://fapi.binance.com/fapi/v1/klines?symbol=${normalized}&interval=${interval}&limit=${limit}`;
+  console.log(`Fetching Binance Futures klines: ${url}`);
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Binance Futures API error: ${response.status}`);
+  }
+  const data = await response.json();
+  return data.map((k: any[]) => ({
+    openTime: k[0],
+    open: parseFloat(k[1]),
+    high: parseFloat(k[2]),
+    low: parseFloat(k[3]),
+    close: parseFloat(k[4]),
+    volume: parseFloat(k[5]),
+    closeTime: k[6],
+  }));
+}
+
 async function fetchCurrentPrice(symbol: string, exchange: string): Promise<number> {
-  // Check if it's a forex/commodity symbol
+  // Futures
+  if (isFuturesSymbol(symbol)) {
+    const normalized = normalizeFuturesSymbol(symbol);
+    const url = `https://fapi.binance.com/fapi/v1/ticker/price?symbol=${normalized}`;
+    const response = await fetch(url);
+    const data = await response.json();
+    return parseFloat(data.price);
+  }
+
+  // Forex/commodity
   if (exchange === 'forex' || forexSymbolMap[symbol.toUpperCase()]) {
     return await fetchForexPrice(symbol);
   }
@@ -298,7 +341,7 @@ async function fetchCurrentPrice(symbol: string, exchange: string): Promise<numb
     throw new Error(`Failed to fetch Bybit price for ${symbol}`);
   }
   
-  // Default to Binance
+  // Default to Binance spot
   const url = `https://api.binance.com/api/v3/ticker/price?symbol=${symbol.toUpperCase()}`;
   const response = await fetch(url);
   const data = await response.json();
@@ -339,14 +382,15 @@ serve(async (req) => {
 
     console.log(`Fetching market data for ${symbol} on ${exchange}, timeframe: ${timeframe}`);
 
-    // Check if it's a forex symbol
-    const isForexSymbol = exchange === 'forex' || forexSymbolMap[symbol.toUpperCase()];
+    // Check symbol type
+    const isForexSym = exchange === 'forex' || forexSymbolMap[symbol.toUpperCase()];
+    const isFutures = isFuturesSymbol(symbol);
 
     // If no timeframe, just fetch current price
     if (!timeframe) {
       const price = await fetchCurrentPrice(symbol, exchange);
       return new Response(
-        JSON.stringify({ price, symbol, exchange: isForexSymbol ? 'forex' : exchange }),
+        JSON.stringify({ price, symbol, exchange: isFutures ? 'futures' : isForexSym ? 'forex' : exchange }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -354,7 +398,9 @@ serve(async (req) => {
     const interval = timeframeMap[timeframe] || timeframe;
     let candles: Candle[];
 
-    if (isForexSymbol) {
+    if (isFutures) {
+      candles = await fetchFuturesKlines(symbol, interval, limit);
+    } else if (isForexSym) {
       candles = await fetchForexKlines(symbol, interval, limit);
     } else if (exchange === 'bybit') {
       candles = await fetchBybitKlines(symbol, interval, limit);
@@ -367,7 +413,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         symbol,
-        exchange: isForexSymbol ? 'forex' : exchange,
+        exchange: isFutures ? 'futures' : isForexSym ? 'forex' : exchange,
         timeframe,
         price: currentPrice,
         candles,

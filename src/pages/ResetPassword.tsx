@@ -7,6 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Activity, Loader2, Lock, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { validatePassword } from '@/lib/passwordValidation';
+import { PasswordStrengthMeter } from '@/components/PasswordStrengthMeter';
 
 export default function ResetPassword() {
   const navigate = useNavigate();
@@ -48,8 +50,9 @@ export default function ResetPassword() {
       toast.error('Preencha todos os campos');
       return;
     }
-    if (password.length < 6) {
-      toast.error('A senha deve ter pelo menos 6 caracteres');
+    const strength = validatePassword(password);
+    if (strength.errors.length > 0) {
+      toast.error(`Senha fraca: ${strength.errors[0]}`);
       return;
     }
     if (password !== confirmPassword) {
@@ -144,6 +147,7 @@ export default function ResetPassword() {
                     autoComplete="new-password"
                   />
                 </div>
+                <PasswordStrengthMeter password={password} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="confirm-password">Confirmar Senha</Label>

@@ -7,6 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Activity, Loader2, Mail, Lock, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
+import { validatePassword } from '@/lib/passwordValidation';
+import { PasswordStrengthMeter } from '@/components/PasswordStrengthMeter';
 
 export default function Auth() {
   const { user, loading, signIn, signUp, resetPassword } = useAuth();
@@ -51,7 +53,13 @@ export default function Auth() {
       toast.error('Preencha todos os campos');
       return;
     }
-    if (password.length < 6) {
+    if (mode === 'signup') {
+      const strength = validatePassword(password);
+      if (strength.errors.length > 0) {
+        toast.error(`Senha fraca: ${strength.errors[0]}`);
+        return;
+      }
+    } else if (password.length < 6) {
       toast.error('A senha deve ter pelo menos 6 caracteres');
       return;
     }
@@ -133,6 +141,7 @@ export default function Auth() {
                     autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                   />
                 </div>
+                {mode === 'signup' && <PasswordStrengthMeter password={password} />}
               </div>
             )}
             <Button type="submit" className="w-full glow-primary" disabled={submitting}>

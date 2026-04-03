@@ -31,6 +31,48 @@ function isForexSymbol(symbol: string): boolean {
   return !!forexSymbolMap[symbol.toUpperCase()];
 }
 
+// Check if symbol is a futures perpetual (ends with PERP or has "1!" suffix)
+function isFuturesSymbol(symbol: string): boolean {
+  const upper = symbol.toUpperCase();
+  return upper.endsWith('PERP') || upper.includes('1!');
+}
+
+// Normalize futures symbol to Binance perpetual format
+function normalizeFuturesSymbol(symbol: string): string {
+  let s = symbol.toUpperCase();
+  if (s.includes('1!')) {
+    // e.g. BTC1! -> BTCUSDT
+    s = s.replace('1!', 'USDT');
+  }
+  if (s.endsWith('PERP')) {
+    s = s.replace('PERP', '');
+  }
+  if (!s.endsWith('USDT')) {
+    s = s + 'USDT';
+  }
+  return s;
+}
+
+async function fetchFuturesTicker(symbol: string): Promise<any> {
+  const normalized = normalizeFuturesSymbol(symbol);
+  const response = await fetch(
+    `https://fapi.binance.com/fapi/v1/ticker/24hr?symbol=${normalized}`
+  );
+  if (!response.ok) {
+    throw new Error(`Binance Futures API error: ${response.status}`);
+  }
+  const data = await response.json();
+  return {
+    symbol: symbol.toUpperCase(),
+    lastPrice: data.lastPrice,
+    priceChangePercent: data.priceChangePercent,
+    highPrice: data.highPrice,
+    lowPrice: data.lowPrice,
+    openPrice: data.openPrice,
+    volume: data.volume,
+  };
+}
+
 async function fetchYahooTicker(symbol: string): Promise<any> {
   const yahooSymbol = forexSymbolMap[symbol.toUpperCase()];
   if (!yahooSymbol) throw new Error(`Unknown forex symbol: ${symbol}`);
@@ -153,6 +195,14 @@ serve(async (req) => {
     const { action, symbol, symbols, exchange } = await req.json();
 
     if (action === 'ticker' && symbol) {
+      // Futures symbols
+      if (isFuturesSymbol(symbol)) {
+        const data = await fetchFuturesTicker(symbol);
+        return new Response(JSON.stringify(data), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
       // Check if forex/commodity symbol
       if (isForexSymbol(symbol)) {
         const data = await fetchYahooTicker(symbol);
@@ -213,20 +263,39 @@ serve(async (req) => {
     }
 
     if (action === 'tickers' && symbols && Array.isArray(symbols)) {
-      // Separate forex, bybit, and binance symbols
-      const forexSyms = symbols.filter((s: any) => isForexSymbol(typeof s === 'string' ? s : s.symbol));
+      // Separate futures, forex, bybit, and binance symbols
+      const futuresSyms = symbols.filter((s: any) => {
+        const sym = typeof s === 'string' ? s : s.symbol;
+        return isFuturesSymbol(sym);
+      });
+      const forexSyms = symbols.filter((s: any) => {
+        const sym = typeof s === 'string' ? s : s.symbol;
+        return !isFuturesSymbol(sym) && isForexSymbol(sym);
+      });
       const bybitSyms = symbols.filter((s: any) => {
+        const sym = typeof s === 'string' ? s : s.symbol;
+        if (isFuturesSymbol(sym) || isForexSymbol(sym)) return false;
         if (typeof s === 'object' && s.exchange === 'bybit') return true;
         return false;
       });
       const binanceSyms = symbols.filter((s: any) => {
         const sym = typeof s === 'string' ? s : s.symbol;
-        if (isForexSymbol(sym)) return false;
+        if (isFuturesSymbol(sym) || isForexSymbol(sym)) return false;
         if (typeof s === 'object' && s.exchange === 'bybit') return false;
         return true;
       });
 
       const results: any[] = [];
+
+      // Fetch futures symbols in parallel
+      if (futuresSyms.length > 0) {
+        const futuresResults = await Promise.allSettled(
+          futuresSyms.map((s: any) => fetchFuturesTicker(typeof s === 'string' ? s : s.symbol))
+        );
+        for (const r of futuresResults) {
+          if (r.status === 'fulfilled') results.push(r.value);
+        }
+      }
 
       // Fetch forex symbols in parallel
       if (forexSyms.length > 0) {
