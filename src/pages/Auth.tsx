@@ -141,6 +141,7 @@ export default function Auth() {
                     autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                   />
                 </div>
+                {mode === 'signup' && <PasswordStrengthMeter password={password} />}
               </div>
             )}
             <Button type="submit" className="w-full glow-primary" disabled={submitting}>
