@@ -50,8 +50,9 @@ export default function ResetPassword() {
       toast.error('Preencha todos os campos');
       return;
     }
-    if (password.length < 6) {
-      toast.error('A senha deve ter pelo menos 6 caracteres');
+    const strength = validatePassword(password);
+    if (strength.errors.length > 0) {
+      toast.error(`Senha fraca: ${strength.errors[0]}`);
       return;
     }
     if (password !== confirmPassword) {
