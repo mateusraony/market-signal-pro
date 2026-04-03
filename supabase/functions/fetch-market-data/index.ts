@@ -382,14 +382,15 @@ serve(async (req) => {
 
     console.log(`Fetching market data for ${symbol} on ${exchange}, timeframe: ${timeframe}`);
 
-    // Check if it's a forex symbol
-    const isForexSymbol = exchange === 'forex' || forexSymbolMap[symbol.toUpperCase()];
+    // Check symbol type
+    const isForexSym = exchange === 'forex' || forexSymbolMap[symbol.toUpperCase()];
+    const isFutures = isFuturesSymbol(symbol);
 
     // If no timeframe, just fetch current price
     if (!timeframe) {
       const price = await fetchCurrentPrice(symbol, exchange);
       return new Response(
-        JSON.stringify({ price, symbol, exchange: isForexSymbol ? 'forex' : exchange }),
+        JSON.stringify({ price, symbol, exchange: isFutures ? 'futures' : isForexSym ? 'forex' : exchange }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -397,7 +398,9 @@ serve(async (req) => {
     const interval = timeframeMap[timeframe] || timeframe;
     let candles: Candle[];
 
-    if (isForexSymbol) {
+    if (isFutures) {
+      candles = await fetchFuturesKlines(symbol, interval, limit);
+    } else if (isForexSym) {
       candles = await fetchForexKlines(symbol, interval, limit);
     } else if (exchange === 'bybit') {
       candles = await fetchBybitKlines(symbol, interval, limit);
