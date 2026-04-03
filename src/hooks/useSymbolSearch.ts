@@ -36,6 +36,12 @@ const FOREX_SYMBOLS: SymbolInfo[] = [
   { symbol: 'DJI30', baseAsset: 'DJI', quoteAsset: 'USD', exchange: 'forex', category: 'index' },
 ];
 
+// Futures symbols
+const FUTURES_SYMBOLS: SymbolInfo[] = [
+  { symbol: 'BTCUSDT', baseAsset: 'BTC', quoteAsset: 'USDT', exchange: 'binance', category: 'crypto' },
+  { symbol: 'ETHUSDT', baseAsset: 'ETH', quoteAsset: 'USDT', exchange: 'binance', category: 'crypto' },
+];
+
 // Popular crypto symbols to show by default
 const DEFAULT_CRYPTO_SYMBOLS: SymbolInfo[] = [
   { symbol: 'BTCUSDT', baseAsset: 'BTC', quoteAsset: 'USDT', exchange: 'binance', category: 'crypto' },
