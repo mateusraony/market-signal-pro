@@ -194,23 +194,40 @@ async function fetchForexKlines(
   
   console.log(`Fetching forex klines for ${symbol} (Yahoo: ${yahooSymbol})`);
   
-  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSymbol}?interval=${yahooParams.interval}&range=${yahooParams.range}`;
-  
-  const response = await fetch(url, {
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-    },
-  });
-  
-  if (!response.ok) {
-    throw new Error(`Yahoo Finance API error: ${response.status}`);
+  const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+
+  const endpoints = [
+    `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol)}?interval=${yahooParams.interval}&range=${yahooParams.range}`,
+    `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSymbol)}?interval=${yahooParams.interval}&range=${yahooParams.range}`,
+  ];
+
+  let result: any = null;
+  let lastError: Error | null = null;
+
+  for (const url of endpoints) {
+    try {
+      const response = await fetch(url, {
+        headers: { 'User-Agent': userAgent },
+      });
+
+      if (!response.ok) {
+        await response.text();
+        lastError = new Error(`Yahoo API ${response.status}`);
+        continue;
+      }
+
+      const data = await response.json();
+      result = data.chart?.result?.[0];
+      if (result) break;
+
+      lastError = new Error(`No chart data for ${symbol}`);
+    } catch (e) {
+      lastError = e instanceof Error ? e : new Error(String(e));
+    }
   }
   
-  const data = await response.json();
-  const result = data.chart?.result?.[0];
-  
   if (!result) {
-    throw new Error(`No data for ${symbol}`);
+    throw lastError || new Error(`All Yahoo Finance endpoints failed for ${symbol}`);
   }
   
   const timestamps = result.timestamp || [];
