@@ -263,20 +263,39 @@ serve(async (req) => {
     }
 
     if (action === 'tickers' && symbols && Array.isArray(symbols)) {
-      // Separate forex, bybit, and binance symbols
-      const forexSyms = symbols.filter((s: any) => isForexSymbol(typeof s === 'string' ? s : s.symbol));
+      // Separate futures, forex, bybit, and binance symbols
+      const futuresSyms = symbols.filter((s: any) => {
+        const sym = typeof s === 'string' ? s : s.symbol;
+        return isFuturesSymbol(sym);
+      });
+      const forexSyms = symbols.filter((s: any) => {
+        const sym = typeof s === 'string' ? s : s.symbol;
+        return !isFuturesSymbol(sym) && isForexSymbol(sym);
+      });
       const bybitSyms = symbols.filter((s: any) => {
+        const sym = typeof s === 'string' ? s : s.symbol;
+        if (isFuturesSymbol(sym) || isForexSymbol(sym)) return false;
         if (typeof s === 'object' && s.exchange === 'bybit') return true;
         return false;
       });
       const binanceSyms = symbols.filter((s: any) => {
         const sym = typeof s === 'string' ? s : s.symbol;
-        if (isForexSymbol(sym)) return false;
+        if (isFuturesSymbol(sym) || isForexSymbol(sym)) return false;
         if (typeof s === 'object' && s.exchange === 'bybit') return false;
         return true;
       });
 
       const results: any[] = [];
+
+      // Fetch futures symbols in parallel
+      if (futuresSyms.length > 0) {
+        const futuresResults = await Promise.allSettled(
+          futuresSyms.map((s: any) => fetchFuturesTicker(typeof s === 'string' ? s : s.symbol))
+        );
+        for (const r of futuresResults) {
+          if (r.status === 'fulfilled') results.push(r.value);
+        }
+      }
 
       // Fetch forex symbols in parallel
       if (forexSyms.length > 0) {
