@@ -116,7 +116,7 @@ async function fetchBybitKlines(
   }));
 }
 
-// Fetch forex/commodity price using a free API
+// Fetch forex/commodity price using Yahoo Finance with multi-endpoint fallback
 async function fetchForexPrice(symbol: string): Promise<number> {
   const yahooSymbol = forexSymbolMap[symbol.toUpperCase()];
   
@@ -126,26 +126,48 @@ async function fetchForexPrice(symbol: string): Promise<number> {
   
   console.log(`Fetching forex price for ${symbol} (Yahoo: ${yahooSymbol})`);
   
-  // Use Yahoo Finance API (free, no key required)
-  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSymbol}?interval=1d&range=1d`;
-  
-  const response = await fetch(url, {
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-    },
-  });
-  
-  if (!response.ok) {
-    throw new Error(`Yahoo Finance API error: ${response.status}`);
+  const encodedSymbol = encodeURIComponent(yahooSymbol);
+  const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+
+  const endpoints = [
+    `https://query2.finance.yahoo.com/v8/finance/chart/${encodedSymbol}?interval=1d&range=2d`,
+    `https://query1.finance.yahoo.com/v8/finance/chart/${encodedSymbol}?interval=1d&range=2d`,
+    `https://query2.finance.yahoo.com/v6/finance/quote?symbols=${encodedSymbol}`,
+  ];
+
+  let lastError: Error | null = null;
+
+  for (const url of endpoints) {
+    try {
+      const response = await fetch(url, {
+        headers: { 'User-Agent': userAgent },
+      });
+
+      if (!response.ok) {
+        await response.text();
+        lastError = new Error(`Yahoo API ${response.status} for ${url}`);
+        continue;
+      }
+
+      const data = await response.json();
+
+      // v8 chart response
+      if (data.chart?.result?.[0]?.meta?.regularMarketPrice) {
+        return data.chart.result[0].meta.regularMarketPrice;
+      }
+
+      // v6 quote response
+      if (data.quoteResponse?.result?.[0]?.regularMarketPrice) {
+        return data.quoteResponse.result[0].regularMarketPrice;
+      }
+
+      lastError = new Error(`No valid price in response for ${symbol}`);
+    } catch (e) {
+      lastError = e instanceof Error ? e : new Error(String(e));
+    }
   }
-  
-  const data = await response.json();
-  
-  if (data.chart?.result?.[0]?.meta?.regularMarketPrice) {
-    return data.chart.result[0].meta.regularMarketPrice;
-  }
-  
-  throw new Error(`Failed to get price for ${symbol}`);
+
+  throw lastError || new Error(`All Yahoo Finance endpoints failed for ${symbol}`);
 }
 
 // Fetch forex candles using Yahoo Finance
