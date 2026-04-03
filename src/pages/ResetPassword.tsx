@@ -7,6 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Activity, Loader2, Lock, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { validatePassword } from '@/lib/passwordValidation';
+import { PasswordStrengthMeter } from '@/components/PasswordStrengthMeter';
 
 export default function ResetPassword() {
   const navigate = useNavigate();
