@@ -7,6 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Activity, Loader2, Mail, Lock, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
+import { validatePassword } from '@/lib/passwordValidation';
+import { PasswordStrengthMeter } from '@/components/PasswordStrengthMeter';
 
 export default function Auth() {
   const { user, loading, signIn, signUp, resetPassword } = useAuth();
