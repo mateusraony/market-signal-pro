@@ -147,6 +147,7 @@ export default function ResetPassword() {
                     autoComplete="new-password"
                   />
                 </div>
+                <PasswordStrengthMeter password={password} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="confirm-password">Confirmar Senha</Label>
