@@ -195,6 +195,14 @@ serve(async (req) => {
     const { action, symbol, symbols, exchange } = await req.json();
 
     if (action === 'ticker' && symbol) {
+      // Futures symbols
+      if (isFuturesSymbol(symbol)) {
+        const data = await fetchFuturesTicker(symbol);
+        return new Response(JSON.stringify(data), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
       // Check if forex/commodity symbol
       if (isForexSymbol(symbol)) {
         const data = await fetchYahooTicker(symbol);
