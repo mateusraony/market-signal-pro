@@ -413,7 +413,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         symbol,
-        exchange: isForexSymbol ? 'forex' : exchange,
+        exchange: isFutures ? 'futures' : isForexSym ? 'forex' : exchange,
         timeframe,
         price: currentPrice,
         candles,
