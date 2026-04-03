@@ -31,6 +31,48 @@ function isForexSymbol(symbol: string): boolean {
   return !!forexSymbolMap[symbol.toUpperCase()];
 }
 
+// Check if symbol is a futures perpetual (ends with PERP or has "1!" suffix)
+function isFuturesSymbol(symbol: string): boolean {
+  const upper = symbol.toUpperCase();
+  return upper.endsWith('PERP') || upper.includes('1!');
+}
+
+// Normalize futures symbol to Binance perpetual format
+function normalizeFuturesSymbol(symbol: string): string {
+  let s = symbol.toUpperCase();
+  if (s.includes('1!')) {
+    // e.g. BTC1! -> BTCUSDT
+    s = s.replace('1!', 'USDT');
+  }
+  if (s.endsWith('PERP')) {
+    s = s.replace('PERP', '');
+  }
+  if (!s.endsWith('USDT')) {
+    s = s + 'USDT';
+  }
+  return s;
+}
+
+async function fetchFuturesTicker(symbol: string): Promise<any> {
+  const normalized = normalizeFuturesSymbol(symbol);
+  const response = await fetch(
+    `https://fapi.binance.com/fapi/v1/ticker/24hr?symbol=${normalized}`
+  );
+  if (!response.ok) {
+    throw new Error(`Binance Futures API error: ${response.status}`);
+  }
+  const data = await response.json();
+  return {
+    symbol: symbol.toUpperCase(),
+    lastPrice: data.lastPrice,
+    priceChangePercent: data.priceChangePercent,
+    highPrice: data.highPrice,
+    lowPrice: data.lowPrice,
+    openPrice: data.openPrice,
+    volume: data.volume,
+  };
+}
+
 async function fetchYahooTicker(symbol: string): Promise<any> {
   const yahooSymbol = forexSymbolMap[symbol.toUpperCase()];
   if (!yahooSymbol) throw new Error(`Unknown forex symbol: ${symbol}`);
