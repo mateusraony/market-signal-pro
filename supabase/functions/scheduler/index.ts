@@ -23,6 +23,9 @@ function isAuthorizedInternal(req: Request): boolean {
   const token = authHeader.replace('Bearer ', '');
   if (KNOWN_INTERNAL_KEYS.has(token)) return true;
   if (CRON_SECRET && token === CRON_SECRET) return true;
+  // Also check apikey header (Supabase gateway forwards this)
+  const apiKey = req.headers.get('apikey') || '';
+  if (apiKey && KNOWN_INTERNAL_KEYS.has(apiKey)) return true;
   return false;
 }
 
