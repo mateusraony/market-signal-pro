@@ -8,11 +8,15 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const CRON_SECRET = Deno.env.get('CRON_SECRET');
 
 function isAuthorizedInternal(req: Request): boolean {
   const authHeader = req.headers.get('authorization') || '';
   const token = authHeader.replace('Bearer ', '');
-  return token === SUPABASE_SERVICE_ROLE_KEY;
+  // Accept service_role_key OR cron secret
+  if (token === SUPABASE_SERVICE_ROLE_KEY) return true;
+  if (CRON_SECRET && token === CRON_SECRET) return true;
+  return false;
 }
 
 serve(async (req) => {
