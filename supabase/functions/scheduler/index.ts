@@ -14,9 +14,10 @@ const CRON_SECRET = Deno.env.get('CRON_SECRET');
 function isAuthorizedInternal(req: Request): boolean {
   const authHeader = req.headers.get('authorization') || '';
   const token = authHeader.replace('Bearer ', '');
-  // Accept service_role_key, anon_key (for pg_cron), or cron secret
+  const anonKeyPrefix = SUPABASE_ANON_KEY ? SUPABASE_ANON_KEY.substring(0, 20) : 'NOT_SET';
+  console.log(`[Auth] Token prefix: ${token.substring(0, 20)}, AnonKey prefix: ${anonKeyPrefix}, SRK set: ${!!SUPABASE_SERVICE_ROLE_KEY}, CRON set: ${!!CRON_SECRET}`);
   if (token === SUPABASE_SERVICE_ROLE_KEY) return true;
-  if (token === SUPABASE_ANON_KEY) return true;
+  if (SUPABASE_ANON_KEY && token === SUPABASE_ANON_KEY) return true;
   if (CRON_SECRET && token === CRON_SECRET) return true;
   return false;
 }
