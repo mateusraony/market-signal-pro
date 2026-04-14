@@ -8,16 +8,20 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
+const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') || '';
+const SUPABASE_PUBLISHABLE_KEY = Deno.env.get('SUPABASE_PUBLISHABLE_KEY') || '';
 const CRON_SECRET = Deno.env.get('CRON_SECRET');
+
+// Known anon/publishable keys that pg_cron may use
+const KNOWN_INTERNAL_KEYS = new Set(
+  [SUPABASE_SERVICE_ROLE_KEY, SUPABASE_ANON_KEY, SUPABASE_PUBLISHABLE_KEY]
+    .filter(Boolean)
+);
 
 function isAuthorizedInternal(req: Request): boolean {
   const authHeader = req.headers.get('authorization') || '';
   const token = authHeader.replace('Bearer ', '');
-  const anonKeyPrefix = SUPABASE_ANON_KEY ? SUPABASE_ANON_KEY.substring(0, 20) : 'NOT_SET';
-  console.log(`[Auth] Token prefix: ${token.substring(0, 20)}, AnonKey prefix: ${anonKeyPrefix}, SRK set: ${!!SUPABASE_SERVICE_ROLE_KEY}, CRON set: ${!!CRON_SECRET}`);
-  if (token === SUPABASE_SERVICE_ROLE_KEY) return true;
-  if (SUPABASE_ANON_KEY && token === SUPABASE_ANON_KEY) return true;
+  if (KNOWN_INTERNAL_KEYS.has(token)) return true;
   if (CRON_SECRET && token === CRON_SECRET) return true;
   return false;
 }
