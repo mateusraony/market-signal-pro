@@ -49,13 +49,19 @@ export function SettingsPage() {
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData?.session?.access_token;
       
+      if (!accessToken) {
+        toast.error('Sessão expirada. Faça login novamente para testar.');
+        playErrorSound();
+        return;
+      }
+      
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-telegram`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${accessToken || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            'Authorization': `Bearer ${accessToken}`,
           },
           body: JSON.stringify({
             chatId: telegramId,
