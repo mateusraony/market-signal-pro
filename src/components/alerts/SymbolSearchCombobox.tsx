@@ -34,7 +34,7 @@ export function SymbolSearchCombobox({
   const [inputValue, setInputValue] = useState('');
   
   const { symbols, isLoading, setSearchTerm } = useSymbolSearch('all');
-  const validation = useValidateSymbol(inputValue, exchange === 'forex' ? 'binance' : exchange);
+  const validation = useValidateSymbol(inputValue, exchange);
 
   useEffect(() => {
     setSearchTerm(inputValue);

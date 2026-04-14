@@ -466,7 +466,8 @@ serve(async (req) => {
             .eq('user_id', alert.user_id)
             .single();
 
-          // Check quiet hours
+          // Check quiet hours (only affects Telegram, NOT history)
+          let isQuietHours = false;
           if (profile?.quiet_hours_start && profile?.quiet_hours_end) {
             const tz = profile.timezone || 'America/Sao_Paulo';
             const nowInTz = new Date().toLocaleTimeString('en-US', { 
@@ -480,16 +481,16 @@ serve(async (req) => {
             const quietEnd = profile.quiet_hours_end;
             
             // Handle overnight ranges (e.g. 22:00-07:00) vs same-day (e.g. 01:00-06:00)
-            const isQuiet = quietStart <= quietEnd
+            isQuietHours = quietStart <= quietEnd
               ? (nowInTz >= quietStart && nowInTz <= quietEnd)
               : (nowInTz >= quietStart || nowInTz <= quietEnd);
-            if (isQuiet) {
-              console.log(`Alert ${alert.id} skipped due to quiet hours`);
-              continue;
+            
+            if (isQuietHours) {
+              console.log(`Alert ${alert.id} in quiet hours — will record history but skip Telegram`);
             }
           }
 
-          // Record in history
+          // Record in history (ALWAYS, even during quiet hours)
           const historyRecord = {
             alert_id: alert.id,
             user_id: alert.user_id,
@@ -509,7 +510,9 @@ serve(async (req) => {
             prob_up: result.probUp,
             prob_down: result.probDown,
             confidence_level: result.confidence,
-            comment_ai: result.comment,
+            comment_ai: isQuietHours 
+              ? `[🔇 Notificação suprimida por horário de silêncio] ${result.comment || ''}`
+              : result.comment,
             model_version: 'v1.0-rules',
           };
 
@@ -518,11 +521,13 @@ serve(async (req) => {
             .insert(historyRecord);
 
           if (historyError) {
-            console.error(`Failed to save history: ${historyError.message}`);
+            // P2 fix: if history insert fails, do NOT consume/deactivate the alert
+            console.error(`Failed to save history for alert ${alert.id}: ${historyError.message}. Alert will NOT be consumed.`);
+            continue;
           }
 
-          // Send Telegram notification
-          if (profile?.telegram_id) {
+          // Send Telegram notification (only if NOT in quiet hours)
+          if (!isQuietHours && profile?.telegram_id) {
             console.log(`[Alert ${alert.id}] Sending Telegram notification to ${profile.telegram_id}`);
             const alertData = {
               symbol: alert.symbol,
@@ -540,8 +545,10 @@ serve(async (req) => {
 
             const telegramSent = await sendTelegramAlert(SUPABASE_URL, profile.telegram_id, alertData);
             console.log(`[Alert ${alert.id}] Telegram result: ${telegramSent ? 'SUCCESS' : 'FAILED'}`);
+          } else if (isQuietHours) {
+            console.log(`[Alert ${alert.id}] Telegram skipped (quiet hours)`);
           } else {
-            console.log(`[Alert ${alert.id}] No telegram_id configured for user ${alert.user_id}, skipping notification`);
+            console.log(`[Alert ${alert.id}] No telegram_id configured for user ${alert.user_id}`);
           }
 
           // Update alert based on mode
