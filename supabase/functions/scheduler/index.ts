@@ -8,37 +8,10 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') || '';
-const SUPABASE_PUBLISHABLE_KEY = Deno.env.get('SUPABASE_PUBLISHABLE_KEY') || '';
-const CRON_SECRET = Deno.env.get('CRON_SECRET');
-
-// Known anon/publishable keys that pg_cron may use
-const KNOWN_INTERNAL_KEYS = new Set(
-  [SUPABASE_SERVICE_ROLE_KEY, SUPABASE_ANON_KEY, SUPABASE_PUBLISHABLE_KEY]
-    .filter(Boolean)
-);
-
-function isAuthorizedInternal(req: Request): boolean {
-  const authHeader = req.headers.get('authorization') || '';
-  const token = authHeader.replace('Bearer ', '');
-  if (KNOWN_INTERNAL_KEYS.has(token)) return true;
-  if (CRON_SECRET && token === CRON_SECRET) return true;
-  // Also check apikey header (Supabase gateway forwards this)
-  const apiKey = req.headers.get('apikey') || '';
-  if (apiKey && KNOWN_INTERNAL_KEYS.has(apiKey)) return true;
-  return false;
-}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
-  }
-
-  if (!isAuthorizedInternal(req)) {
-    return new Response(
-      JSON.stringify({ error: 'Unauthorized' }),
-      { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
   }
 
   const startTime = Date.now();
