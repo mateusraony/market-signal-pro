@@ -242,7 +242,7 @@ export function PriceChart({ symbol, exchange, targetPrice }: PriceChartProps) {
                   strokeDasharray="5 5"
                   strokeWidth={2}
                   label={{ 
-                    value: `Alvo: $${targetPrice}`,
+                    value: `Alvo: ${currency}${targetPrice}`,
                     position: 'left',
                     fill: 'hsl(var(--primary))',
                     fontSize: 10,
