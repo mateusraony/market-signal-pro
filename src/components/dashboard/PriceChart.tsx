@@ -167,7 +167,7 @@ export function PriceChart({ symbol, exchange, targetPrice }: PriceChartProps) {
               <>
                 <div className="flex items-center gap-1 text-primary">
                   <Target className="h-3 w-3" />
-                  <span className="font-mono">${targetPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                  <span className="font-mono">{currency}{targetPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                 </div>
                 {proximityInfo && (
                   <div className={cn(
@@ -184,11 +184,11 @@ export function PriceChart({ symbol, exchange, targetPrice }: PriceChartProps) {
               <>
                 <div className="flex items-center gap-1 text-chart-2">
                   <ArrowUp className="h-3 w-3" />
-                  <span className="font-mono">${high24h?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                  <span className="font-mono">{currency}{high24h?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                 </div>
                 <div className="flex items-center gap-1 text-destructive">
                   <ArrowDown className="h-3 w-3" />
-                  <span className="font-mono">${low24h?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                  <span className="font-mono">{currency}{low24h?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                 </div>
               </>
             )}
