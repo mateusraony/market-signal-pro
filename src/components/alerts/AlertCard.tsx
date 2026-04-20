@@ -53,7 +53,7 @@ export function AlertCard({ alert, onTogglePause, onDelete, onEdit, onReactivate
     switch (alert.type) {
       case 'price_level':
         const dir = alert.params.price_direction;
-        return `Preço ${dir === 'above' ? '≥' : dir === 'below' ? '≤' : '↔'} ${formatPrice(alert.params.target_price ?? 0)}`;
+        return `Preço ${dir === 'above' ? '≥' : dir === 'below' ? '≤' : '↔'} ${getCurrencySymbol(alert.symbol)}${formatPrice(alert.params.target_price ?? 0)}`;
       case 'rsi_level':
         const level = alert.params.rsi_level ?? 0;
         const mode = alert.params.rsi_mode === 'crossing' ? 'cruzar' : 'tocar';
@@ -178,7 +178,7 @@ export function AlertCard({ alert, onTogglePause, onDelete, onEdit, onReactivate
           <div className="flex items-center justify-between p-2 rounded-lg bg-muted/30">
             <span className="text-sm text-muted-foreground">Preço atual:</span>
             <div className="flex items-center gap-2">
-              <span className="font-mono font-bold">{formatPrice(livePrice.price)}</span>
+              <span className="font-mono font-bold">{getCurrencySymbol(alert.symbol)}{formatPrice(livePrice.price)}</span>
               <Badge 
                 variant="outline" 
                 className={cn(
