@@ -145,7 +145,7 @@ export function PriceChart({ symbol, exchange, targetPrice }: PriceChartProps) {
               "text-2xl font-bold font-mono tracking-tight transition-colors",
               proximityInfo?.level === 'critical' && "text-destructive"
             )}>
-              ${formattedPrice}
+              {currency}{formattedPrice}
             </div>
             <div className={cn(
               "flex items-center gap-1 text-sm font-medium",
