@@ -22,19 +22,14 @@ import {
 import { DollarSign, TrendingUp, BarChart3, Volume2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { SymbolSearchCombobox } from './SymbolSearchCombobox';
+import type { ExchangeType } from '@/hooks/useSymbolSearch';
 
 interface EditAlertDialogProps {
   alert: Alert | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
-
-const POPULAR_SYMBOLS = [
-  'BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'SOLUSDT', 'XRPUSDT',
-  'DOGEUSDT', 'ADAUSDT', 'AVAXUSDT', 'DOTUSDT', 'LINKUSDT'
-];
-
-const EXCHANGES = ['binance', 'bybit', 'forex'];
 
 const TIMEFRAMES: { value: AlertTimeframe; label: string }[] = [
   { value: '4h', label: '4 Horas' },
