@@ -85,7 +85,7 @@ const DEFAULT_CRYPTO_SYMBOLS: SymbolInfo[] = [
 
 const DEFAULT_SYMBOLS: SymbolInfo[] = [...DEFAULT_CRYPTO_SYMBOLS, ...FOREX_SYMBOLS];
 
-// Fetch all available symbols from Binance
+// Fetch all available symbols from Binance (USDT and BRL pairs)
 async function fetchBinanceSymbols(): Promise<SymbolInfo[]> {
   try {
     const response = await fetch('https://api.binance.com/api/v3/exchangeInfo');
@@ -94,7 +94,7 @@ async function fetchBinanceSymbols(): Promise<SymbolInfo[]> {
     const data = await response.json();
     
     return data.symbols
-      .filter((s: any) => s.status === 'TRADING' && s.quoteAsset === 'USDT')
+      .filter((s: any) => s.status === 'TRADING' && (s.quoteAsset === 'USDT' || s.quoteAsset === 'BRL'))
       .map((s: any) => ({
         symbol: s.symbol,
         baseAsset: s.baseAsset,
@@ -107,7 +107,7 @@ async function fetchBinanceSymbols(): Promise<SymbolInfo[]> {
   }
 }
 
-// Fetch all available symbols from Bybit
+// Fetch all available symbols from Bybit (USDT and BRL where available)
 async function fetchBybitSymbols(): Promise<SymbolInfo[]> {
   try {
     const response = await fetch('https://api.bybit.com/v5/market/instruments-info?category=spot');
@@ -118,7 +118,7 @@ async function fetchBybitSymbols(): Promise<SymbolInfo[]> {
     if (data.retCode !== 0) throw new Error(data.retMsg);
     
     return data.result.list
-      .filter((s: any) => s.status === 'Trading' && s.quoteCoin === 'USDT')
+      .filter((s: any) => s.status === 'Trading' && (s.quoteCoin === 'USDT' || s.quoteCoin === 'BRL'))
       .map((s: any) => ({
         symbol: s.symbol,
         baseAsset: s.baseCoin,
