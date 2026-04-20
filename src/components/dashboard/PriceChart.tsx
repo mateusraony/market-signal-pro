@@ -15,6 +15,7 @@ import { usePriceHistory } from '@/hooks/usePriceHistory';
 import { TrendingUp, TrendingDown, Wifi, WifiOff, ArrowUp, ArrowDown, AlertTriangle, Target } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNotificationSound } from '@/hooks/useNotificationSound';
+import { getCurrencySymbol } from '@/lib/format';
 
 interface PriceChartProps {
   symbol: string;
@@ -24,6 +25,7 @@ interface PriceChartProps {
 
 export function PriceChart({ symbol, exchange, targetPrice }: PriceChartProps) {
   const { priceHistory, currentPrice, change24h, isConnected, high24h, low24h } = usePriceHistory(symbol, exchange);
+  const currency = getCurrencySymbol(symbol);
   const { playAlertSound } = useNotificationSound();
   const [hasAlerted, setHasAlerted] = useState(false);
 
@@ -143,7 +145,7 @@ export function PriceChart({ symbol, exchange, targetPrice }: PriceChartProps) {
               "text-2xl font-bold font-mono tracking-tight transition-colors",
               proximityInfo?.level === 'critical' && "text-destructive"
             )}>
-              ${formattedPrice}
+              {currency}{formattedPrice}
             </div>
             <div className={cn(
               "flex items-center gap-1 text-sm font-medium",
@@ -165,7 +167,7 @@ export function PriceChart({ symbol, exchange, targetPrice }: PriceChartProps) {
               <>
                 <div className="flex items-center gap-1 text-primary">
                   <Target className="h-3 w-3" />
-                  <span className="font-mono">${targetPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                  <span className="font-mono">{currency}{targetPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                 </div>
                 {proximityInfo && (
                   <div className={cn(
@@ -182,11 +184,11 @@ export function PriceChart({ symbol, exchange, targetPrice }: PriceChartProps) {
               <>
                 <div className="flex items-center gap-1 text-chart-2">
                   <ArrowUp className="h-3 w-3" />
-                  <span className="font-mono">${high24h?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                  <span className="font-mono">{currency}{high24h?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                 </div>
                 <div className="flex items-center gap-1 text-destructive">
                   <ArrowDown className="h-3 w-3" />
-                  <span className="font-mono">${low24h?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                  <span className="font-mono">{currency}{low24h?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                 </div>
               </>
             )}
@@ -229,7 +231,7 @@ export function PriceChart({ symbol, exchange, targetPrice }: PriceChartProps) {
                 }}
                 labelStyle={{ color: 'hsl(var(--foreground))' }}
                 formatter={(value: number) => [
-                  `$${value >= 1 ? value.toFixed(4) : value.toFixed(8)}`,
+                  `${currency}${value >= 1 ? value.toFixed(4) : value.toFixed(8)}`,
                   'Preço'
                 ]}
               />
@@ -240,7 +242,7 @@ export function PriceChart({ symbol, exchange, targetPrice }: PriceChartProps) {
                   strokeDasharray="5 5"
                   strokeWidth={2}
                   label={{ 
-                    value: `Alvo: $${targetPrice}`,
+                    value: `Alvo: ${currency}${targetPrice}`,
                     position: 'left',
                     fill: 'hsl(var(--primary))',
                     fontSize: 10,

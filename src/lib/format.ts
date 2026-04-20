@@ -38,6 +38,25 @@ export function formatPrice(price: number | null, decimals: number = 2): string 
   });
 }
 
+/**
+ * Returns the currency symbol for a given trading symbol.
+ * BRL pairs (e.g. BTCBRL, USDBRL) → "R$"
+ * Everything else → "$"
+ */
+export function getCurrencySymbol(symbol: string): string {
+  if (!symbol) return '$';
+  return symbol.toUpperCase().endsWith('BRL') ? 'R$' : '$';
+}
+
+/**
+ * Formats a price with the appropriate currency prefix based on the symbol.
+ */
+export function formatPriceWithCurrency(price: number | null, symbol: string, decimals: number = 2): string {
+  if (price === null || price === undefined) return '-';
+  const prefix = getCurrencySymbol(symbol);
+  return `${prefix}${formatPrice(price, decimals)}`;
+}
+
 export function formatPercent(value: number | null): string {
   if (value === null || value === undefined) return '-';
   return `${value.toFixed(1)}%`;
