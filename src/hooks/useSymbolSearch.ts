@@ -26,6 +26,12 @@ const FOREX_SYMBOLS: SymbolInfo[] = [
   { symbol: 'AUDUSD', baseAsset: 'AUD', quoteAsset: 'USD', exchange: 'forex', category: 'forex' },
   { symbol: 'USDCAD', baseAsset: 'USD', quoteAsset: 'CAD', exchange: 'forex', category: 'forex' },
   { symbol: 'NZDUSD', baseAsset: 'NZD', quoteAsset: 'USD', exchange: 'forex', category: 'forex' },
+  // BRL pairs (Real Brasileiro)
+  { symbol: 'USDBRL', baseAsset: 'USD', quoteAsset: 'BRL', exchange: 'forex', category: 'forex' },
+  { symbol: 'EURBRL', baseAsset: 'EUR', quoteAsset: 'BRL', exchange: 'forex', category: 'forex' },
+  { symbol: 'GBPBRL', baseAsset: 'GBP', quoteAsset: 'BRL', exchange: 'forex', category: 'forex' },
+  { symbol: 'JPYBRL', baseAsset: 'JPY', quoteAsset: 'BRL', exchange: 'forex', category: 'forex' },
+  { symbol: 'ARSBRL', baseAsset: 'ARS', quoteAsset: 'BRL', exchange: 'forex', category: 'forex' },
   // Cross pairs
   { symbol: 'EURGBP', baseAsset: 'EUR', quoteAsset: 'GBP', exchange: 'forex', category: 'forex' },
   { symbol: 'EURJPY', baseAsset: 'EUR', quoteAsset: 'JPY', exchange: 'forex', category: 'forex' },
@@ -34,6 +40,7 @@ const FOREX_SYMBOLS: SymbolInfo[] = [
   { symbol: 'SPX500', baseAsset: 'SPX', quoteAsset: 'USD', exchange: 'forex', category: 'index' },
   { symbol: 'NAS100', baseAsset: 'NDX', quoteAsset: 'USD', exchange: 'forex', category: 'index' },
   { symbol: 'DJI30', baseAsset: 'DJI', quoteAsset: 'USD', exchange: 'forex', category: 'index' },
+  { symbol: 'IBOV', baseAsset: 'IBOV', quoteAsset: 'BRL', exchange: 'forex', category: 'index' },
 ];
 
 // Futures symbols
@@ -44,6 +51,7 @@ const FUTURES_SYMBOLS: SymbolInfo[] = [
 
 // Popular crypto symbols to show by default
 const DEFAULT_CRYPTO_SYMBOLS: SymbolInfo[] = [
+  // USDT pairs
   { symbol: 'BTCUSDT', baseAsset: 'BTC', quoteAsset: 'USDT', exchange: 'binance', category: 'crypto' },
   { symbol: 'ETHUSDT', baseAsset: 'ETH', quoteAsset: 'USDT', exchange: 'binance', category: 'crypto' },
   { symbol: 'BNBUSDT', baseAsset: 'BNB', quoteAsset: 'USDT', exchange: 'binance', category: 'crypto' },
@@ -64,6 +72,15 @@ const DEFAULT_CRYPTO_SYMBOLS: SymbolInfo[] = [
   { symbol: 'ATOMUSDT', baseAsset: 'ATOM', quoteAsset: 'USDT', exchange: 'binance', category: 'crypto' },
   { symbol: 'APTUSDT', baseAsset: 'APT', quoteAsset: 'USDT', exchange: 'binance', category: 'crypto' },
   { symbol: 'SUIUSDT', baseAsset: 'SUI', quoteAsset: 'USDT', exchange: 'binance', category: 'crypto' },
+  // BRL pairs (Binance Brasil)
+  { symbol: 'BTCBRL', baseAsset: 'BTC', quoteAsset: 'BRL', exchange: 'binance', category: 'crypto' },
+  { symbol: 'ETHBRL', baseAsset: 'ETH', quoteAsset: 'BRL', exchange: 'binance', category: 'crypto' },
+  { symbol: 'SOLBRL', baseAsset: 'SOL', quoteAsset: 'BRL', exchange: 'binance', category: 'crypto' },
+  { symbol: 'BNBBRL', baseAsset: 'BNB', quoteAsset: 'BRL', exchange: 'binance', category: 'crypto' },
+  { symbol: 'XRPBRL', baseAsset: 'XRP', quoteAsset: 'BRL', exchange: 'binance', category: 'crypto' },
+  { symbol: 'USDTBRL', baseAsset: 'USDT', quoteAsset: 'BRL', exchange: 'binance', category: 'crypto' },
+  { symbol: 'DOGEBRL', baseAsset: 'DOGE', quoteAsset: 'BRL', exchange: 'binance', category: 'crypto' },
+  { symbol: 'ADABRL', baseAsset: 'ADA', quoteAsset: 'BRL', exchange: 'binance', category: 'crypto' },
 ];
 
 const DEFAULT_SYMBOLS: SymbolInfo[] = [...DEFAULT_CRYPTO_SYMBOLS, ...FOREX_SYMBOLS];
