@@ -39,9 +39,16 @@ const forexSymbolMap: Record<string, string> = {
   'EURGBP': 'EURGBP=X',
   'EURJPY': 'EURJPY=X',
   'GBPJPY': 'GBPJPY=X',
+  // BRL pairs (Real Brasileiro)
+  'USDBRL': 'USDBRL=X',
+  'EURBRL': 'EURBRL=X',
+  'GBPBRL': 'GBPBRL=X',
+  'JPYBRL': 'JPYBRL=X',
+  'ARSBRL': 'ARSBRL=X',
   'SPX500': '^GSPC',     // S&P 500
   'NAS100': '^NDX',      // Nasdaq 100
   'DJI30': '^DJI',       // Dow Jones
+  'IBOV': '^BVSP',       // Ibovespa
 };
 
 async function fetchBinanceKlines(

@@ -12,29 +12,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { DollarSign, TrendingUp, BarChart3, Volume2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { SymbolSearchCombobox } from './SymbolSearchCombobox';
+import type { ExchangeType } from '@/hooks/useSymbolSearch';
 
 interface EditAlertDialogProps {
   alert: Alert | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
-
-const POPULAR_SYMBOLS = [
-  'BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'SOLUSDT', 'XRPUSDT',
-  'DOGEUSDT', 'ADAUSDT', 'AVAXUSDT', 'DOTUSDT', 'LINKUSDT'
-];
-
-const EXCHANGES = ['binance', 'bybit', 'forex'];
 
 const TIMEFRAMES: { value: AlertTimeframe; label: string }[] = [
   { value: '4h', label: '4 Horas' },
@@ -201,33 +189,17 @@ export function EditAlertDialog({ alert, open, onOpenChange }: EditAlertDialogPr
 
         <div className="space-y-6 py-4">
           {/* Symbol & Exchange */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Símbolo</Label>
-              <Select value={symbol} onValueChange={setSymbol}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {POPULAR_SYMBOLS.map((s) => (
-                    <SelectItem key={s} value={s}>{s}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Exchange</Label>
-              <Select value={exchange} onValueChange={setExchange}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {EXCHANGES.map((e) => (
-                    <SelectItem key={e} value={e} className="capitalize">{e}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="space-y-2">
+            <Label>Símbolo</Label>
+            <SymbolSearchCombobox
+              value={symbol}
+              exchange={exchange as ExchangeType}
+              onValueChange={setSymbol}
+              onExchangeChange={(e) => setExchange(e)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Busca dinâmica em Binance, Bybit e Forex (incluindo pares BRL).
+            </p>
           </div>
 
           {/* Timeframe (not for price) */}

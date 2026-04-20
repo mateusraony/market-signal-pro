@@ -22,9 +22,16 @@ const forexSymbolMap: Record<string, string> = {
   'EURGBP': 'EURGBP=X',
   'EURJPY': 'EURJPY=X',
   'GBPJPY': 'GBPJPY=X',
+  // BRL pairs
+  'USDBRL': 'USDBRL=X',
+  'EURBRL': 'EURBRL=X',
+  'GBPBRL': 'GBPBRL=X',
+  'JPYBRL': 'JPYBRL=X',
+  'ARSBRL': 'ARSBRL=X',
   'SPX500': '^GSPC',
   'NAS100': '^NDX',
   'DJI30': '^DJI',
+  'IBOV': '^BVSP',
 };
 
 function isForexSymbol(symbol: string): boolean {

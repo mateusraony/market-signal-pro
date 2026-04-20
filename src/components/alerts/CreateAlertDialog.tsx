@@ -230,12 +230,12 @@ export function CreateAlertDialog({ trigger }: CreateAlertDialogProps) {
               <Label>Símbolo</Label>
               <SymbolSearchCombobox
                 value={symbol}
-                exchange={exchange as 'binance' | 'bybit'}
+                exchange={exchange}
                 onValueChange={setSymbol}
                 onExchangeChange={(e) => setExchange(e)}
               />
               <p className="text-xs text-muted-foreground">
-                Busca automática em Binance e Bybit. Digite para encontrar qualquer par.
+                Busca dinâmica em Binance, Bybit e Forex (USDT, BRL, USD).
               </p>
             </div>
 
