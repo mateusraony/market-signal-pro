@@ -25,6 +25,7 @@ interface PriceChartProps {
 
 export function PriceChart({ symbol, exchange, targetPrice }: PriceChartProps) {
   const { priceHistory, currentPrice, change24h, isConnected, high24h, low24h } = usePriceHistory(symbol, exchange);
+  const currency = getCurrencySymbol(symbol);
   const { playAlertSound } = useNotificationSound();
   const [hasAlerted, setHasAlerted] = useState(false);
 
