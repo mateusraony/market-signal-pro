@@ -1,5 +1,5 @@
 import { Alert, formatAlertType, formatTimeframe, getAlertTypeColor } from '@/types/alerts';
-import { formatPrice, formatToBRT } from '@/lib/format';
+import { formatPrice, formatToBRT, getCurrencySymbol } from '@/lib/format';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
