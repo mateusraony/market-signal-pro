@@ -231,7 +231,7 @@ export function PriceChart({ symbol, exchange, targetPrice }: PriceChartProps) {
                 }}
                 labelStyle={{ color: 'hsl(var(--foreground))' }}
                 formatter={(value: number) => [
-                  `$${value >= 1 ? value.toFixed(4) : value.toFixed(8)}`,
+                  `${currency}${value >= 1 ? value.toFixed(4) : value.toFixed(8)}`,
                   'Preço'
                 ]}
               />
