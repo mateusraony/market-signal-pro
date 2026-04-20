@@ -15,6 +15,7 @@ import { usePriceHistory } from '@/hooks/usePriceHistory';
 import { TrendingUp, TrendingDown, Wifi, WifiOff, ArrowUp, ArrowDown, AlertTriangle, Target } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNotificationSound } from '@/hooks/useNotificationSound';
+import { getCurrencySymbol } from '@/lib/format';
 
 interface PriceChartProps {
   symbol: string;
