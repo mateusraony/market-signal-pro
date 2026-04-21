@@ -24,10 +24,27 @@ interface PriceChartProps {
 }
 
 export function PriceChart({ symbol, exchange, targetPrice }: PriceChartProps) {
-  const { priceHistory, currentPrice, change24h, isConnected, high24h, low24h } = usePriceHistory(symbol, exchange);
+  const { priceHistory, currentPrice, change24h, isConnected, high24h, low24h, lastUpdate } = usePriceHistory(symbol, exchange);
   const currency = getCurrencySymbol(symbol);
   const { playAlertSound } = useNotificationSound();
   const [hasAlerted, setHasAlerted] = useState(false);
+  const [secondsAgo, setSecondsAgo] = useState(0);
+
+  // Live "seconds ago" counter for last update
+  useEffect(() => {
+    if (!lastUpdate) return;
+    const tick = () => setSecondsAgo(Math.floor((Date.now() - lastUpdate.getTime()) / 1000));
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [lastUpdate]);
+
+  const lastUpdateLabel = useMemo(() => {
+    if (!lastUpdate) return '—';
+    return lastUpdate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  }, [lastUpdate]);
+
+  const isStale = secondsAgo > 15;
 
   // Calculate proximity to target price
   const proximityInfo = useMemo(() => {
@@ -129,6 +146,23 @@ export function PriceChart({ symbol, exchange, targetPrice }: PriceChartProps) {
             )}
           </CardTitle>
           <div className="flex items-center gap-2">
+            <div
+              className={cn(
+                "flex items-center gap-1.5 text-[10px] font-mono px-2 py-1 rounded-md border",
+                isConnected && !isStale
+                  ? "border-chart-2/30 bg-chart-2/10 text-chart-2"
+                  : "border-muted bg-muted/30 text-muted-foreground"
+              )}
+              title={`Última atualização: ${lastUpdateLabel}`}
+            >
+              <span
+                className={cn(
+                  "h-1.5 w-1.5 rounded-full",
+                  isConnected && !isStale ? "bg-chart-2 animate-pulse" : "bg-muted-foreground"
+                )}
+              />
+              {isConnected && !isStale ? `${secondsAgo}s` : 'offline'}
+            </div>
             {isConnected ? (
               <Wifi className="h-4 w-4 text-chart-2" />
             ) : (

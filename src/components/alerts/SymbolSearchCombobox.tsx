@@ -87,9 +87,10 @@ export function SymbolSearchCombobox({
     }
   };
 
-  // Group symbols by category
-  const cryptoSymbols = symbols.filter(s => s.exchange !== 'forex');
-  const forexSymbols = symbols.filter(s => s.exchange === 'forex');
+  // Group symbols by category - BRL pairs get their own dedicated section
+  const brlSymbols = symbols.filter(s => s.symbol.endsWith('BRL'));
+  const cryptoSymbols = symbols.filter(s => s.exchange !== 'forex' && !s.symbol.endsWith('BRL'));
+  const forexSymbols = symbols.filter(s => s.exchange === 'forex' && !s.symbol.endsWith('BRL'));
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -153,6 +154,36 @@ export function SymbolSearchCombobox({
               </CommandEmpty>
             )}
             
+            {/* BRL pairs - dedicated section so they're always discoverable */}
+            {brlSymbols.length > 0 && (
+              <CommandGroup heading="🇧🇷 Pares BRL (Real Brasileiro)">
+                {brlSymbols.slice(0, 30).map((symbol) => (
+                  <CommandItem
+                    key={`${symbol.exchange}-${symbol.symbol}`}
+                    value={symbol.symbol}
+                    onSelect={() => handleSelect(symbol.symbol, symbol.exchange)}
+                    className="flex items-center justify-between"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Check
+                        className={cn(
+                          "h-4 w-4",
+                          value === symbol.symbol ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      <span className="font-mono">{symbol.symbol}</span>
+                    </div>
+                    <Badge
+                      variant="outline"
+                      className={cn("text-xs", getExchangeBadgeStyle(symbol.exchange))}
+                    >
+                      {symbol.exchange === 'forex' ? 'Forex' : symbol.exchange}
+                    </Badge>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
+
             {/* Forex & Commodities */}
             {forexSymbols.length > 0 && (
               <CommandGroup heading="Forex & Commodities">
@@ -188,7 +219,7 @@ export function SymbolSearchCombobox({
             {/* Crypto */}
             {cryptoSymbols.length > 0 && (
               <CommandGroup heading="Criptomoedas">
-                {cryptoSymbols.slice(0, 30).map((symbol) => (
+                {cryptoSymbols.slice(0, 50).map((symbol) => (
                   <CommandItem
                     key={`${symbol.exchange}-${symbol.symbol}`}
                     value={symbol.symbol}
