@@ -14,6 +14,7 @@ interface UsePriceHistoryReturn {
   isConnected: boolean;
   high24h: number | null;
   low24h: number | null;
+  lastUpdate: Date | null;
 }
 
 export function usePriceHistory(symbol: string, exchange?: string, maxPoints: number = 60): UsePriceHistoryReturn {
@@ -23,6 +24,7 @@ export function usePriceHistory(symbol: string, exchange?: string, maxPoints: nu
   const [high24h, setHigh24h] = useState<number | null>(null);
   const [low24h, setLow24h] = useState<number | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
 
   const formatTime = useCallback((date: Date) => {
     return date.toLocaleTimeString('pt-BR', { 
@@ -48,6 +50,7 @@ export function usePriceHistory(symbol: string, exchange?: string, maxPoints: nu
       setHigh24h(parseFloat(data.highPrice));
       setLow24h(parseFloat(data.lowPrice));
       setIsConnected(true);
+      setLastUpdate(now);
 
       setPriceHistory(prev => {
         const newPoint: PricePoint = {
@@ -84,5 +87,5 @@ export function usePriceHistory(symbol: string, exchange?: string, maxPoints: nu
     return () => clearInterval(interval);
   }, [symbol, fetchPrice]);
 
-  return { priceHistory, currentPrice, change24h, isConnected, high24h, low24h };
+  return { priceHistory, currentPrice, change24h, isConnected, high24h, low24h, lastUpdate };
 }
