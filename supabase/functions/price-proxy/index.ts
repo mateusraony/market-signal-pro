@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -52,12 +51,21 @@ async function logSystemError(stage: string, details: Record<string, unknown>) {
     const url = Deno.env.get('SUPABASE_URL');
     const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     if (!url || !key) return;
-    const supabase = createClient(url, key);
-    await supabase.from('system_events').insert({
-      type: 'price_proxy_error',
-      start_time_utc: new Date().toISOString(),
-      end_time_utc: new Date().toISOString(),
-      details: { stage, ...details },
+    // Use REST API directly to avoid importing the supabase client (keeps boot fast and safe)
+    await fetch(`${url}/rest/v1/system_events`, {
+      method: 'POST',
+      headers: {
+        'apikey': key,
+        'Authorization': `Bearer ${key}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal',
+      },
+      body: JSON.stringify({
+        type: 'price_proxy_error',
+        start_time_utc: new Date().toISOString(),
+        end_time_utc: new Date().toISOString(),
+        details: { stage, ...details },
+      }),
     });
   } catch (e) {
     console.error('Failed to log system error:', e);
