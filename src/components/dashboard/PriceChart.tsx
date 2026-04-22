@@ -24,7 +24,7 @@ interface PriceChartProps {
 }
 
 export function PriceChart({ symbol, exchange, targetPrice }: PriceChartProps) {
-  const { priceHistory, currentPrice, change24h, isConnected, high24h, low24h, lastUpdate } = usePriceHistory(symbol, exchange);
+  const { priceHistory, currentPrice, change24h, isConnected, high24h, low24h, lastUpdate, lastError } = usePriceHistory(symbol, exchange);
   const currency = getCurrencySymbol(symbol);
   const { playAlertSound } = useNotificationSound();
   const [hasAlerted, setHasAlerted] = useState(false);
@@ -41,10 +41,23 @@ export function PriceChart({ symbol, exchange, targetPrice }: PriceChartProps) {
 
   const lastUpdateLabel = useMemo(() => {
     if (!lastUpdate) return '—';
-    return lastUpdate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    return lastUpdate.toLocaleTimeString('pt-BR', {
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+      timeZone: 'America/Sao_Paulo',
+    });
   }, [lastUpdate]);
 
   const isStale = secondsAgo > 15;
+
+  // Refresh status: "erro" | "atualizado agora" | "há Xs/min"
+  const refreshStatus = useMemo<{ label: string; tone: 'ok' | 'warn' | 'error' }>(() => {
+    if (lastError && !isConnected) return { label: 'erro', tone: 'error' };
+    if (!lastUpdate) return { label: 'aguardando…', tone: 'warn' };
+    if (secondsAgo < 10) return { label: 'atualizado agora', tone: 'ok' };
+    if (secondsAgo < 60) return { label: `há ${secondsAgo}s`, tone: isStale ? 'warn' : 'ok' };
+    const min = Math.floor(secondsAgo / 60);
+    return { label: `há ${min} min`, tone: 'warn' };
+  }, [lastError, isConnected, lastUpdate, secondsAgo, isStale]);
 
   // Calculate proximity to target price
   const proximityInfo = useMemo(() => {
