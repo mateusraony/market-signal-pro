@@ -24,7 +24,7 @@ interface PriceChartProps {
 }
 
 export function PriceChart({ symbol, exchange, targetPrice }: PriceChartProps) {
-  const { priceHistory, currentPrice, change24h, isConnected, high24h, low24h, lastUpdate } = usePriceHistory(symbol, exchange);
+  const { priceHistory, currentPrice, change24h, isConnected, high24h, low24h, lastUpdate, lastError } = usePriceHistory(symbol, exchange);
   const currency = getCurrencySymbol(symbol);
   const { playAlertSound } = useNotificationSound();
   const [hasAlerted, setHasAlerted] = useState(false);
@@ -41,10 +41,23 @@ export function PriceChart({ symbol, exchange, targetPrice }: PriceChartProps) {
 
   const lastUpdateLabel = useMemo(() => {
     if (!lastUpdate) return '—';
-    return lastUpdate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    return lastUpdate.toLocaleTimeString('pt-BR', {
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+      timeZone: 'America/Sao_Paulo',
+    });
   }, [lastUpdate]);
 
   const isStale = secondsAgo > 15;
+
+  // Refresh status: "erro" | "atualizado agora" | "há Xs/min"
+  const refreshStatus = useMemo<{ label: string; tone: 'ok' | 'warn' | 'error' }>(() => {
+    if (lastError && !isConnected) return { label: 'erro', tone: 'error' };
+    if (!lastUpdate) return { label: 'aguardando…', tone: 'warn' };
+    if (secondsAgo < 10) return { label: 'atualizado agora', tone: 'ok' };
+    if (secondsAgo < 60) return { label: `há ${secondsAgo}s`, tone: isStale ? 'warn' : 'ok' };
+    const min = Math.floor(secondsAgo / 60);
+    return { label: `há ${min} min`, tone: 'warn' };
+  }, [lastError, isConnected, lastUpdate, secondsAgo, isStale]);
 
   // Calculate proximity to target price
   const proximityInfo = useMemo(() => {
@@ -149,19 +162,31 @@ export function PriceChart({ symbol, exchange, targetPrice }: PriceChartProps) {
             <div
               className={cn(
                 "flex items-center gap-1.5 text-[10px] font-mono px-2 py-1 rounded-md border",
-                isConnected && !isStale
-                  ? "border-chart-2/30 bg-chart-2/10 text-chart-2"
-                  : "border-muted bg-muted/30 text-muted-foreground"
+                refreshStatus.tone === 'ok' && "border-chart-2/30 bg-chart-2/10 text-chart-2",
+                refreshStatus.tone === 'warn' && "border-warning/30 bg-warning/10 text-warning",
+                refreshStatus.tone === 'error' && "border-destructive/40 bg-destructive/10 text-destructive",
               )}
-              title={`Última atualização: ${lastUpdateLabel}`}
+              title={
+                lastError
+                  ? `Erro: ${lastError}`
+                  : `Última atualização (BRT): ${lastUpdateLabel}`
+              }
             >
               <span
                 className={cn(
                   "h-1.5 w-1.5 rounded-full",
-                  isConnected && !isStale ? "bg-chart-2 animate-pulse" : "bg-muted-foreground"
+                  refreshStatus.tone === 'ok' && "bg-chart-2 animate-pulse",
+                  refreshStatus.tone === 'warn' && "bg-warning",
+                  refreshStatus.tone === 'error' && "bg-destructive",
                 )}
               />
-              {isConnected && !isStale ? `${secondsAgo}s` : 'offline'}
+              {refreshStatus.label}
+            </div>
+            <div
+              className="hidden sm:block text-[10px] font-mono text-muted-foreground"
+              title="Horário de Brasília"
+            >
+              {lastUpdateLabel} BRT
             </div>
             {isConnected ? (
               <Wifi className="h-4 w-4 text-chart-2" />
