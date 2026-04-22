@@ -4,7 +4,65 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
 };
+
+// ---------- Response envelope ----------
+type Envelope<T> = {
+  ok: boolean;
+  data?: T;
+  error?: string;
+  code?: string;
+  status?: number;
+  serverTime: string; // UTC ISO
+};
+
+function ok<T>(data: T, extra: Partial<Envelope<T>> = {}) {
+  const body: Envelope<T> = {
+    ok: true,
+    data,
+    serverTime: new Date().toISOString(),
+    ...extra,
+  };
+  return new Response(JSON.stringify(body), {
+    status: 200,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+}
+
+function fail(code: string, message: string, status = 200, extra: Record<string, unknown> = {}) {
+  const body: Envelope<never> = {
+    ok: false,
+    error: message,
+    code,
+    status,
+    serverTime: new Date().toISOString(),
+    ...extra,
+  };
+  // Always return 200 so the client can read the body and avoid blank screens
+  return new Response(JSON.stringify(body), {
+    status: 200,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+}
+
+// ---------- Server-side error logging ----------
+async function logSystemError(stage: string, details: Record<string, unknown>) {
+  try {
+    const url = Deno.env.get('SUPABASE_URL');
+    const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    if (!url || !key) return;
+    const supabase = createClient(url, key);
+    await supabase.from('system_events').insert({
+      type: 'price_proxy_error',
+      start_time_utc: new Date().toISOString(),
+      end_time_utc: new Date().toISOString(),
+      details: { stage, ...details },
+    });
+  } catch (e) {
+    console.error('Failed to log system error:', e);
+  }
+}
 
 // Forex symbol mappings for Yahoo Finance
 const forexSymbolMap: Record<string, string> = {
@@ -38,25 +96,16 @@ function isForexSymbol(symbol: string): boolean {
   return !!forexSymbolMap[symbol.toUpperCase()];
 }
 
-// Check if symbol is a futures perpetual (ends with PERP or has "1!" suffix)
 function isFuturesSymbol(symbol: string): boolean {
   const upper = symbol.toUpperCase();
   return upper.endsWith('PERP') || upper.includes('1!');
 }
 
-// Normalize futures symbol to Binance perpetual format
 function normalizeFuturesSymbol(symbol: string): string {
   let s = symbol.toUpperCase();
-  if (s.includes('1!')) {
-    // e.g. BTC1! -> BTCUSDT
-    s = s.replace('1!', 'USDT');
-  }
-  if (s.endsWith('PERP')) {
-    s = s.replace('PERP', '');
-  }
-  if (!s.endsWith('USDT')) {
-    s = s + 'USDT';
-  }
+  if (s.includes('1!')) s = s.replace('1!', 'USDT');
+  if (s.endsWith('PERP')) s = s.replace('PERP', '');
+  if (!s.endsWith('USDT')) s = s + 'USDT';
   return s;
 }
 
@@ -77,6 +126,7 @@ async function fetchFuturesTicker(symbol: string): Promise<any> {
     lowPrice: data.lowPrice,
     openPrice: data.openPrice,
     volume: data.volume,
+    serverTime: new Date().toISOString(),
   };
 }
 
@@ -87,7 +137,6 @@ async function fetchYahooTicker(symbol: string): Promise<any> {
   const encodedSymbol = encodeURIComponent(yahooSymbol);
   const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
-  // Try multiple Yahoo Finance endpoints as fallbacks
   const endpoints = [
     `https://query2.finance.yahoo.com/v8/finance/chart/${encodedSymbol}?interval=1d&range=2d`,
     `https://query1.finance.yahoo.com/v8/finance/chart/${encodedSymbol}?interval=1d&range=2d`,
@@ -98,29 +147,22 @@ async function fetchYahooTicker(symbol: string): Promise<any> {
 
   for (const url of endpoints) {
     try {
-      const response = await fetch(url, {
-        headers: { 'User-Agent': userAgent },
-      });
-
+      const response = await fetch(url, { headers: { 'User-Agent': userAgent } });
       if (!response.ok) {
-        await response.text(); // consume body
+        await response.text();
         lastError = new Error(`Yahoo API ${response.status} for ${url}`);
         continue;
       }
-
       const data = await response.json();
 
-      // v8 chart response
       if (data.chart?.result?.[0]) {
         const result = data.chart.result[0];
         const meta = result.meta;
         if (!meta?.regularMarketPrice) continue;
-
         const prevClose = meta.chartPreviousClose || meta.previousClose || meta.regularMarketPrice;
         const lastPrice = meta.regularMarketPrice;
         const priceChange = lastPrice - prevClose;
         const priceChangePercent = prevClose ? ((priceChange / prevClose) * 100) : 0;
-
         return {
           symbol: symbol.toUpperCase(),
           lastPrice: String(lastPrice),
@@ -130,17 +172,16 @@ async function fetchYahooTicker(symbol: string): Promise<any> {
           lowPrice: String(meta.regularMarketDayLow || lastPrice),
           openPrice: String(prevClose),
           volume: String(meta.regularMarketVolume || 0),
+          serverTime: new Date().toISOString(),
         };
       }
 
-      // v6 quote response
       if (data.quoteResponse?.result?.[0]) {
         const quote = data.quoteResponse.result[0];
         const lastPrice = quote.regularMarketPrice;
         const prevClose = quote.regularMarketPreviousClose || lastPrice;
         const priceChange = lastPrice - prevClose;
         const priceChangePercent = prevClose ? ((priceChange / prevClose) * 100) : 0;
-
         return {
           symbol: symbol.toUpperCase(),
           lastPrice: String(lastPrice),
@@ -150,6 +191,7 @@ async function fetchYahooTicker(symbol: string): Promise<any> {
           lowPrice: String(quote.regularMarketDayLow || lastPrice),
           openPrice: String(prevClose),
           volume: String(quote.regularMarketVolume || 0),
+          serverTime: new Date().toISOString(),
         };
       }
 
@@ -167,82 +209,66 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
-  // price-proxy serves public market data (Binance/Bybit/Yahoo). No auth required.
-  // This avoids 401s when user session is expired or anon key is missing.
+  let payload: any = null;
+  try {
+    payload = await req.json();
+  } catch {
+    return fail('BAD_REQUEST', 'Invalid JSON body', 400);
+  }
+
+  const { action, symbol, symbols, exchange } = payload || {};
 
   try {
-    const { action, symbol, symbols, exchange } = await req.json();
-
     if (action === 'ticker' && symbol) {
-      // Futures symbols
+      let data: any;
       if (isFuturesSymbol(symbol)) {
-        const data = await fetchFuturesTicker(symbol);
-        return new Response(JSON.stringify(data), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-
-      // Check if forex/commodity symbol
-      if (isForexSymbol(symbol)) {
-        const data = await fetchYahooTicker(symbol);
-        return new Response(JSON.stringify(data), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-
-      // Bybit exchange
-      if (exchange === 'bybit') {
+        data = await fetchFuturesTicker(symbol);
+      } else if (isForexSymbol(symbol)) {
+        data = await fetchYahooTicker(symbol);
+      } else if (exchange === 'bybit') {
         const response = await fetch(
           `https://api.bybit.com/v5/market/tickers?category=spot&symbol=${symbol.toUpperCase()}`
         );
         if (!response.ok) {
           const errorText = await response.text();
-          return new Response(
-            JSON.stringify({ error: `Bybit API error: ${response.status}`, details: errorText }),
-            { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
+          await logSystemError('bybit_ticker', { symbol, status: response.status, errorText });
+          return fail('UPSTREAM_ERROR', `Bybit API error: ${response.status}`, response.status);
         }
-        const data = await response.json();
-        if (data.retCode !== 0 || !data.result?.list?.length) {
-          return new Response(
-            JSON.stringify({ error: `No Bybit data for ${symbol}` }),
-            { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
+        const r = await response.json();
+        if (r.retCode !== 0 || !r.result?.list?.length) {
+          return fail('NOT_FOUND', `No Bybit data for ${symbol}`, 404);
         }
-        const ticker = data.result.list[0];
-        return new Response(JSON.stringify({
+        const ticker = r.result.list[0];
+        data = {
           symbol: ticker.symbol,
           lastPrice: ticker.lastPrice,
           priceChangePercent: ticker.price24hPcnt ? (parseFloat(ticker.price24hPcnt) * 100).toFixed(3) : '0',
           highPrice: ticker.highPrice24h,
           lowPrice: ticker.lowPrice24h,
           volume: ticker.volume24h,
-        }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-
-      // Default: Binance
-      const response = await fetch(
-        `https://api.binance.com/api/v3/ticker/24hr?symbol=${symbol.toUpperCase()}`
-      );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        return new Response(
-          JSON.stringify({ error: `Binance API error: ${response.status}`, details: errorText }),
-          { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          serverTime: new Date().toISOString(),
+        };
+      } else {
+        const response = await fetch(
+          `https://api.binance.com/api/v3/ticker/24hr?symbol=${symbol.toUpperCase()}`
         );
+        if (!response.ok) {
+          const errorText = await response.text();
+          await logSystemError('binance_ticker', { symbol, status: response.status, errorText });
+          return fail('UPSTREAM_ERROR', `Binance API error: ${response.status}`, response.status);
+        }
+        data = await response.json();
+        data.serverTime = new Date().toISOString();
       }
 
-      const data = await response.json();
-      return new Response(JSON.stringify(data), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      // Backwards-compat: keep existing top-level fields, plus envelope helpers.
+      return new Response(
+        JSON.stringify({ ...data, ok: true, serverTime: data.serverTime }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     if (action === 'tickers' && symbols && Array.isArray(symbols)) {
-      // Separate futures, forex, bybit, and binance symbols
       const futuresSyms = symbols.filter((s: any) => {
         const sym = typeof s === 'string' ? s : s.symbol;
         return isFuturesSymbol(sym);
@@ -254,8 +280,7 @@ serve(async (req) => {
       const bybitSyms = symbols.filter((s: any) => {
         const sym = typeof s === 'string' ? s : s.symbol;
         if (isFuturesSymbol(sym) || isForexSymbol(sym)) return false;
-        if (typeof s === 'object' && s.exchange === 'bybit') return true;
-        return false;
+        return typeof s === 'object' && s.exchange === 'bybit';
       });
       const binanceSyms = symbols.filter((s: any) => {
         const sym = typeof s === 'string' ? s : s.symbol;
@@ -265,30 +290,24 @@ serve(async (req) => {
       });
 
       const results: any[] = [];
+      const serverTime = new Date().toISOString();
 
-      // Fetch futures symbols in parallel
       if (futuresSyms.length > 0) {
-        const futuresResults = await Promise.allSettled(
+        const r = await Promise.allSettled(
           futuresSyms.map((s: any) => fetchFuturesTicker(typeof s === 'string' ? s : s.symbol))
         );
-        for (const r of futuresResults) {
-          if (r.status === 'fulfilled') results.push(r.value);
-        }
+        for (const x of r) if (x.status === 'fulfilled') results.push({ ...x.value, serverTime });
       }
 
-      // Fetch forex symbols in parallel
       if (forexSyms.length > 0) {
-        const forexResults = await Promise.allSettled(
+        const r = await Promise.allSettled(
           forexSyms.map((s: any) => fetchYahooTicker(typeof s === 'string' ? s : s.symbol))
         );
-        for (const r of forexResults) {
-          if (r.status === 'fulfilled') results.push(r.value);
-        }
+        for (const x of r) if (x.status === 'fulfilled') results.push({ ...x.value, serverTime });
       }
 
-      // Fetch Bybit symbols in parallel
       if (bybitSyms.length > 0) {
-        const bybitResults = await Promise.allSettled(
+        const r = await Promise.allSettled(
           bybitSyms.map(async (s: any) => {
             const sym = typeof s === 'string' ? s : s.symbol;
             const resp = await fetch(`https://api.bybit.com/v5/market/tickers?category=spot&symbol=${sym.toUpperCase()}`);
@@ -302,44 +321,44 @@ serve(async (req) => {
                 highPrice: t.highPrice24h,
                 lowPrice: t.lowPrice24h,
                 volume: t.volume24h,
+                serverTime,
               };
             }
             return null;
           })
         );
-        for (const r of bybitResults) {
-          if (r.status === 'fulfilled' && r.value) results.push(r.value);
-        }
+        for (const x of r) if (x.status === 'fulfilled' && x.value) results.push(x.value);
       }
 
-      // Fetch crypto symbols from Binance
       if (binanceSyms.length > 0) {
-        const symbolsParam = binanceSyms.map((s: any) => `"${(typeof s === 'string' ? s : s.symbol).toUpperCase()}"`).join(',');
+        const symbolsParam = binanceSyms
+          .map((s: any) => `"${(typeof s === 'string' ? s : s.symbol).toUpperCase()}"`)
+          .join(',');
         const response = await fetch(
           `https://api.binance.com/api/v3/ticker/24hr?symbols=[${symbolsParam}]`
         );
-
         if (response.ok) {
           const data = await response.json();
-          results.push(...data);
+          for (const t of data) results.push({ ...t, serverTime });
+        } else {
+          const errorText = await response.text();
+          await logSystemError('binance_tickers', { count: binanceSyms.length, status: response.status, errorText });
         }
       }
 
+      // Keep legacy array shape: many callers expect a plain array.
       return new Response(JSON.stringify(results), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json', 'X-Server-Time': serverTime },
       });
     }
 
-    return new Response(
-      JSON.stringify({ error: 'Invalid action. Use "ticker" with symbol or "tickers" with symbols array.' }),
-      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return fail('BAD_REQUEST', 'Invalid action. Use "ticker" with symbol or "tickers" with symbols array.', 400);
   } catch (error) {
-    console.error('Price proxy error:', error);
     const message = error instanceof Error ? error.message : 'Unknown error';
-    return new Response(
-      JSON.stringify({ error: message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    const stack = error instanceof Error ? error.stack : undefined;
+    console.error('Price proxy error:', message, stack);
+    await logSystemError('unhandled_exception', { message, stack, payload });
+    return fail('SERVICE_FAILED', message, 500);
   }
 });
