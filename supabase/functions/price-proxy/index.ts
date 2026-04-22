@@ -167,36 +167,8 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
-  const authHeader = req.headers.get('authorization') || '';
-  const token = authHeader.replace('Bearer ', '');
-  const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-  const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-  const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
-
-  let authorized = false;
-
-  if (token === SUPABASE_SERVICE_ROLE_KEY) {
-    authorized = true;
-  } else if (authHeader.startsWith('Bearer ')) {
-    try {
-      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-        global: { headers: { Authorization: authHeader } },
-      });
-      const { data: { user }, error } = await supabase.auth.getUser(token);
-      if (!error && user) {
-        authorized = true;
-      }
-    } catch {
-      // invalid token
-    }
-  }
-
-  if (!authorized) {
-    return new Response(
-      JSON.stringify({ error: 'Unauthorized' }),
-      { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  }
+  // price-proxy serves public market data (Binance/Bybit/Yahoo). No auth required.
+  // This avoids 401s when user session is expired or anon key is missing.
 
   try {
     const { action, symbol, symbols, exchange } = await req.json();
