@@ -162,19 +162,31 @@ export function PriceChart({ symbol, exchange, targetPrice }: PriceChartProps) {
             <div
               className={cn(
                 "flex items-center gap-1.5 text-[10px] font-mono px-2 py-1 rounded-md border",
-                isConnected && !isStale
-                  ? "border-chart-2/30 bg-chart-2/10 text-chart-2"
-                  : "border-muted bg-muted/30 text-muted-foreground"
+                refreshStatus.tone === 'ok' && "border-chart-2/30 bg-chart-2/10 text-chart-2",
+                refreshStatus.tone === 'warn' && "border-warning/30 bg-warning/10 text-warning",
+                refreshStatus.tone === 'error' && "border-destructive/40 bg-destructive/10 text-destructive",
               )}
-              title={`Última atualização: ${lastUpdateLabel}`}
+              title={
+                lastError
+                  ? `Erro: ${lastError}`
+                  : `Última atualização (BRT): ${lastUpdateLabel}`
+              }
             >
               <span
                 className={cn(
                   "h-1.5 w-1.5 rounded-full",
-                  isConnected && !isStale ? "bg-chart-2 animate-pulse" : "bg-muted-foreground"
+                  refreshStatus.tone === 'ok' && "bg-chart-2 animate-pulse",
+                  refreshStatus.tone === 'warn' && "bg-warning",
+                  refreshStatus.tone === 'error' && "bg-destructive",
                 )}
               />
-              {isConnected && !isStale ? `${secondsAgo}s` : 'offline'}
+              {refreshStatus.label}
+            </div>
+            <div
+              className="hidden sm:block text-[10px] font-mono text-muted-foreground"
+              title="Horário de Brasília"
+            >
+              {lastUpdateLabel} BRT
             </div>
             {isConnected ? (
               <Wifi className="h-4 w-4 text-chart-2" />
