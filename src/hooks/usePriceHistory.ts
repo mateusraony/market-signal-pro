@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { logClientError } from '@/lib/errorLogger';
 
 interface PricePoint {
   time: number;
@@ -15,6 +16,7 @@ interface UsePriceHistoryReturn {
   high24h: number | null;
   low24h: number | null;
   lastUpdate: Date | null;
+  lastError: string | null;
 }
 
 export function usePriceHistory(symbol: string, exchange?: string, maxPoints: number = 60): UsePriceHistoryReturn {
@@ -25,12 +27,14 @@ export function usePriceHistory(symbol: string, exchange?: string, maxPoints: nu
   const [low24h, setLow24h] = useState<number | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const [lastError, setLastError] = useState<string | null>(null);
 
   const formatTime = useCallback((date: Date) => {
-    return date.toLocaleTimeString('pt-BR', { 
-      hour: '2-digit', 
+    return date.toLocaleTimeString('pt-BR', {
+      hour: '2-digit',
       minute: '2-digit',
-      second: '2-digit'
+      second: '2-digit',
+      timeZone: 'America/Sao_Paulo',
     });
   }, []);
 
@@ -42,32 +46,55 @@ export function usePriceHistory(symbol: string, exchange?: string, maxPoints: nu
 
       if (error) throw error;
 
+      // New envelope: ok=false on logical errors (returns 200)
+      if (data && data.ok === false) {
+        const msg = data.error || data.code || 'Unknown proxy error';
+        setLastError(msg);
+        setIsConnected(false);
+        logClientError({
+          source: 'usePriceHistory',
+          message: `price-proxy returned not ok for ${symbol}`,
+          details: { code: data.code, error: data.error, status: data.status, exchange },
+        });
+        return;
+      }
+
       const price = parseFloat(data.lastPrice);
-      const now = new Date();
+      if (Number.isNaN(price)) {
+        throw new Error('Invalid price payload');
+      }
+
+      // Prefer server timestamp (BRT-derivable from UTC ISO) when present
+      const serverTime = data.serverTime ? new Date(data.serverTime) : new Date();
 
       setCurrentPrice(price);
       setChange24h(parseFloat(data.priceChangePercent));
       setHigh24h(parseFloat(data.highPrice));
       setLow24h(parseFloat(data.lowPrice));
       setIsConnected(true);
-      setLastUpdate(now);
+      setLastUpdate(serverTime);
+      setLastError(null);
 
       setPriceHistory(prev => {
         const newPoint: PricePoint = {
-          time: now.getTime(),
+          time: serverTime.getTime(),
           price,
-          formattedTime: formatTime(now),
+          formattedTime: formatTime(serverTime),
         };
-
         const updated = [...prev, newPoint];
-        if (updated.length > maxPoints) {
-          return updated.slice(-maxPoints);
-        }
+        if (updated.length > maxPoints) return updated.slice(-maxPoints);
         return updated;
       });
     } catch (error) {
-      console.error('Price proxy error:', error);
+      const msg = error instanceof Error ? error.message : String(error);
+      console.error('Price proxy error:', msg);
       setIsConnected(false);
+      setLastError(msg);
+      logClientError({
+        source: 'usePriceHistory',
+        message: `Fetch failed for ${symbol}`,
+        details: { exchange, error: msg },
+      });
     }
   }, [symbol, exchange, maxPoints, formatTime]);
 
@@ -79,6 +106,7 @@ export function usePriceHistory(symbol: string, exchange?: string, maxPoints: nu
       setHigh24h(null);
       setLow24h(null);
       setIsConnected(false);
+      setLastError(null);
       return;
     }
 
@@ -87,5 +115,5 @@ export function usePriceHistory(symbol: string, exchange?: string, maxPoints: nu
     return () => clearInterval(interval);
   }, [symbol, fetchPrice]);
 
-  return { priceHistory, currentPrice, change24h, isConnected, high24h, low24h, lastUpdate };
+  return { priceHistory, currentPrice, change24h, isConnected, high24h, low24h, lastUpdate, lastError };
 }
