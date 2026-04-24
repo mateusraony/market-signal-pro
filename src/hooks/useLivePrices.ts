@@ -32,6 +32,7 @@ export function useLivePrices(symbols: string[]): UseLivePricesReturn {
 
   const fetchPrices = useCallback(async () => {
     if (symbols.length === 0) return;
+    if (typeof document !== 'undefined' && document.hidden) return;
 
     try {
       const data = await fetchViaProxy('tickers', { symbols });
@@ -59,8 +60,15 @@ export function useLivePrices(symbols: string[]): UseLivePricesReturn {
 
   useEffect(() => {
     fetchPrices();
-    const interval = setInterval(fetchPrices, 5000);
-    return () => clearInterval(interval);
+    const interval = setInterval(fetchPrices, 15000);
+    const handleVisibility = () => {
+      if (!document.hidden) fetchPrices();
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, [fetchPrices]);
 
   return { prices, isConnected, error };
@@ -72,6 +80,7 @@ export function useLivePrice(symbol: string): PriceData | null {
 
   const fetchPrice = useCallback(async () => {
     if (!symbol) return;
+    if (typeof document !== 'undefined' && document.hidden) return;
     try {
       const data = await fetchViaProxy('ticker', { symbol: symbol.toUpperCase() });
       setPrice({
@@ -90,8 +99,15 @@ export function useLivePrice(symbol: string): PriceData | null {
   useEffect(() => {
     if (!symbol) return;
     fetchPrice();
-    const interval = setInterval(fetchPrice, 5000);
-    return () => clearInterval(interval);
+    const interval = setInterval(fetchPrice, 15000);
+    const handleVisibility = () => {
+      if (!document.hidden) fetchPrice();
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, [symbol, fetchPrice]);
 
   return price;
