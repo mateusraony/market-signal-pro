@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAlertsHistory } from '@/hooks/useAlertsHistory';
 import { AlertHistory, AlertType, AlertTimeframe, formatAlertType, formatTimeframe } from '@/types/alerts';
-import { formatToBRT, formatRelativeTime, formatPrice, formatRSI, formatProbability, getRSIColor, getDirectionColor } from '@/lib/format';
+import { formatBRTTooltip, formatToBRT, formatRelativeTime, formatPrice, formatRSI, formatProbability, getRSIColor, getDirectionColor } from '@/lib/format';
 import { exportHistoryToCSV } from '@/lib/exportCSV';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -222,7 +222,9 @@ export function HistoryPage() {
                     <div className="flex items-center gap-2">
                       <Clock className="w-3.5 h-3.5 text-muted-foreground" />
                       <div>
-                        <p className="font-mono text-sm">{formatToBRT(item.event_time_utc)}</p>
+                        <p className="font-mono text-sm" title={`Acionado em ${formatBRTTooltip(item.event_time_utc)} · Detectado em ${formatBRTTooltip(item.detected_time_utc)}`}>
+                          {formatToBRT(item.event_time_utc)}
+                        </p>
                         <p className="text-xs text-muted-foreground">
                           {formatRelativeTime(item.event_time_utc)}
                         </p>
