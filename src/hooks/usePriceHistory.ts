@@ -6,6 +6,7 @@ interface PricePoint {
   time: number;
   price: number;
   formattedTime: string;
+  fullTime: string;
 }
 
 interface UsePriceHistoryReturn {
@@ -16,6 +17,7 @@ interface UsePriceHistoryReturn {
   high24h: number | null;
   low24h: number | null;
   lastUpdate: Date | null;
+  fetchedAt: Date | null;
   lastError: string | null;
 }
 
@@ -27,6 +29,7 @@ export function usePriceHistory(symbol: string, exchange?: string, maxPoints: nu
   const [low24h, setLow24h] = useState<number | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const [fetchedAt, setFetchedAt] = useState<Date | null>(null);
   const [lastError, setLastError] = useState<string | null>(null);
 
   const formatTime = useCallback((date: Date) => {
@@ -67,6 +70,7 @@ export function usePriceHistory(symbol: string, exchange?: string, maxPoints: nu
 
       // Prefer server timestamp (BRT-derivable from UTC ISO) when present
       const serverTime = (payload?.serverTime || data?.serverTime) ? new Date(payload?.serverTime || data?.serverTime) : new Date();
+      const fetchTime = payload?.fetchedAt ? new Date(payload.fetchedAt) : new Date();
 
       setCurrentPrice(price);
       setChange24h(parseFloat(payload.priceChangePercent));
@@ -74,6 +78,7 @@ export function usePriceHistory(symbol: string, exchange?: string, maxPoints: nu
       setLow24h(parseFloat(payload.lowPrice));
       setIsConnected(true);
       setLastUpdate(serverTime);
+      setFetchedAt(fetchTime);
       setLastError(null);
 
       setPriceHistory(prev => {
@@ -81,6 +86,7 @@ export function usePriceHistory(symbol: string, exchange?: string, maxPoints: nu
           time: serverTime.getTime(),
           price,
           formattedTime: formatTime(serverTime),
+          fullTime: serverTime.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }),
         };
         const updated = [...prev, newPoint];
         if (updated.length > maxPoints) return updated.slice(-maxPoints);
@@ -107,6 +113,7 @@ export function usePriceHistory(symbol: string, exchange?: string, maxPoints: nu
       setHigh24h(null);
       setLow24h(null);
       setIsConnected(false);
+      setFetchedAt(null);
       setLastError(null);
       return;
     }
@@ -116,5 +123,5 @@ export function usePriceHistory(symbol: string, exchange?: string, maxPoints: nu
     return () => clearInterval(interval);
   }, [symbol, fetchPrice]);
 
-  return { priceHistory, currentPrice, change24h, isConnected, high24h, low24h, lastUpdate, lastError };
+  return { priceHistory, currentPrice, change24h, isConnected, high24h, low24h, lastUpdate, fetchedAt, lastError };
 }
