@@ -19,10 +19,10 @@ export function validatePassword(password: string): PasswordStrength {
   const labels: Record<number, { label: string; color: string }> = {
     0: { label: 'Muito fraca', color: 'bg-destructive' },
     1: { label: 'Fraca', color: 'bg-destructive' },
-    2: { label: 'Razoável', color: 'bg-orange-500' },
-    3: { label: 'Boa', color: 'bg-yellow-500' },
-    4: { label: 'Forte', color: 'bg-green-500' },
-    5: { label: 'Muito forte', color: 'bg-green-600' },
+    2: { label: 'Razoável', color: 'bg-warning' },
+    3: { label: 'Boa', color: 'bg-warning' },
+    4: { label: 'Forte', color: 'bg-success' },
+    5: { label: 'Muito forte', color: 'bg-success' },
   };
 
   const info = labels[score] || labels[0];
