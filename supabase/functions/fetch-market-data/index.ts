@@ -44,7 +44,14 @@ const forexSymbolMap: Record<string, string> = {
   'EURBRL': 'EURBRL=X',
   'GBPBRL': 'GBPBRL=X',
   'JPYBRL': 'JPYBRL=X',
+  'CHFBRL': 'CHFBRL=X',
+  'AUDBRL': 'AUDBRL=X',
+  'CADBRL': 'CADBRL=X',
+  'NZDBRL': 'NZDBRL=X',
+  'CNYBRL': 'CNYBRL=X',
   'ARSBRL': 'ARSBRL=X',
+  'MXNBRL': 'MXNBRL=X',
+  'XAUBRL': 'XAUBRL=X',
   'SPX500': '^GSPC',     // S&P 500
   'NAS100': '^NDX',      // Nasdaq 100
   'DJI30': '^DJI',       // Dow Jones
@@ -242,37 +249,41 @@ async function fetchForexKlines(
   
   const candles: Candle[] = [];
   
-  for (let i = 0; i < timestamps.length && candles.length < limit; i++) {
-    if (quotes.open?.[i] != null && quotes.close?.[i] != null) {
+  for (let i = 0; i < timestamps.length; i++) {
+    const open = Number(quotes.open?.[i]);
+    const close = Number(quotes.close?.[i]);
+    if (Number.isFinite(open) && Number.isFinite(close)) {
       candles.push({
         openTime: timestamps[i] * 1000,
-        open: quotes.open[i],
-        high: quotes.high[i] || quotes.open[i],
-        low: quotes.low[i] || quotes.open[i],
-        close: quotes.close[i],
-        volume: quotes.volume?.[i] || 0,
+        open,
+        high: Number.isFinite(Number(quotes.high?.[i])) ? Number(quotes.high[i]) : Math.max(open, close),
+        low: Number.isFinite(Number(quotes.low?.[i])) ? Number(quotes.low[i]) : Math.min(open, close),
+        close,
+        volume: Number.isFinite(Number(quotes.volume?.[i])) ? Number(quotes.volume[i]) : 0,
         closeTime: (timestamps[i + 1] || timestamps[i]) * 1000,
       });
     }
   }
+
+  candles.sort((a, b) => a.openTime - b.openTime);
   
   // For 4h timeframe, aggregate 1h candles
   if (interval === '4h' && candles.length > 0) {
-    const aggregated: Candle[] = [];
-    for (let i = 0; i < candles.length; i += 4) {
-      const chunk = candles.slice(i, i + 4);
-      if (chunk.length > 0) {
-        aggregated.push({
-          openTime: chunk[0].openTime,
-          open: chunk[0].open,
-          high: Math.max(...chunk.map(c => c.high)),
-          low: Math.min(...chunk.map(c => c.low)),
-          close: chunk[chunk.length - 1].close,
-          volume: chunk.reduce((sum, c) => sum + c.volume, 0),
-          closeTime: chunk[chunk.length - 1].closeTime,
-        });
-      }
+    const buckets = new Map<number, Candle[]>();
+    const bucketMs = 4 * 60 * 60 * 1000;
+    for (const candle of candles) {
+      const bucket = Math.floor(candle.openTime / bucketMs) * bucketMs;
+      buckets.set(bucket, [...(buckets.get(bucket) || []), candle]);
     }
+    const aggregated = Array.from(buckets.entries()).map(([bucket, chunk]) => ({
+      openTime: bucket,
+      open: chunk[0].open,
+      high: Math.max(...chunk.map(c => c.high)),
+      low: Math.min(...chunk.map(c => c.low)),
+      close: chunk[chunk.length - 1].close,
+      volume: chunk.reduce((sum, c) => sum + c.volume, 0),
+      closeTime: bucket + bucketMs - 1,
+    }));
     return aggregated.slice(-limit);
   }
   
