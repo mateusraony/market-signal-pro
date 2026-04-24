@@ -9,7 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 export function DashboardPage() {
   const { alerts, isLoading } = useAlerts();
 
-  // Get unique symbols from alerts (only active and binance/bybit for live data)
+  // Get unique symbols from alerts (active symbols monitored in live cards)
   const monitoredSymbols = useMemo(() => {
     const symbolMap = new Map<string, { symbol: string; exchange: string; targetPrice?: number }>();
     
@@ -93,9 +93,9 @@ export function DashboardPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Ativos</p>
-                <p className="text-2xl font-bold font-mono text-chart-2">{stats.active}</p>
+                <p className="text-2xl font-bold font-mono text-chart-bullish">{stats.active}</p>
               </div>
-              <Activity className="h-8 w-8 text-chart-2/50" />
+              <Activity className="h-8 w-8 text-chart-bullish/50" />
             </div>
           </CardContent>
         </Card>
@@ -150,7 +150,7 @@ export function DashboardPage() {
             <CardTitle className="text-lg">Nenhum símbolo monitorado</CardTitle>
             <CardDescription>
               Crie alertas para começar a monitorar preços em tempo real.
-              Os gráficos aparecem automaticamente para alertas ativos de criptomoedas.
+              Os gráficos aparecem automaticamente para alertas ativos de crypto, BRL, USD, USDT e forex.
             </CardDescription>
           </CardHeader>
         </Card>
@@ -163,9 +163,9 @@ export function DashboardPage() {
           Pares Populares
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          <PriceChart symbol="BTCBRL" exchange="binance" />
+          <PriceChart symbol="USDBRL" exchange="forex" />
           <PriceChart symbol="BTCUSDT" exchange="binance" />
-          <PriceChart symbol="ETHUSDT" exchange="binance" />
-          <PriceChart symbol="SOLUSDT" exchange="binance" />
         </div>
       </div>
     </div>
