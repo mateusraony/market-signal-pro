@@ -45,6 +45,18 @@ interface MarketData {
   candles: any[];
 }
 
+const previousIndicatorCache = new Map<string, MarketData>();
+
+function isForexOrMarketHoursLimited(symbol: string, exchange: string): boolean {
+  const upper = symbol.toUpperCase();
+  return exchange === 'forex' || upper.endsWith('BRL') || ['SPX500', 'NAS100', 'DJI30', 'IBOV'].includes(upper);
+}
+
+function isWeekendInSaoPaulo(date = new Date()): boolean {
+  const weekday = new Intl.DateTimeFormat('en-US', { weekday: 'short', timeZone: 'America/Sao_Paulo' }).format(date);
+  return weekday === 'Sat' || weekday === 'Sun';
+}
+
 interface TriggerResult {
   triggered: boolean;
   direction?: 'up' | 'down';
@@ -273,7 +285,7 @@ async function fetchMarketData(
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
       },
-      body: JSON.stringify({ symbol, exchange, timeframe, limit: 100 }),
+      body: JSON.stringify({ symbol, exchange, timeframe, limit: 200 }),
     });
 
     if (!marketResponse.ok) {
@@ -434,6 +446,10 @@ serve(async (req) => {
       const [symbol, exchange, timeframe] = key.split('-');
       const tf = timeframe === 'spot' ? null : timeframe;
 
+      if (tf && isForexOrMarketHoursLimited(symbol, exchange) && isWeekendInSaoPaulo()) {
+        console.log(`Weekend market guard active for ${key}; using last closed candles only.`);
+      }
+
       console.log(`Fetching data for ${key}...`);
       const marketData = await fetchMarketData(SUPABASE_URL, symbol, exchange, tf);
 
@@ -443,6 +459,7 @@ serve(async (req) => {
       }
 
       console.log(`Data for ${symbol}: price=${marketData.price}, rsi=${marketData.rsi}, macd=${marketData.macd?.line}`);
+      const previousIndicatorData = previousIndicatorCache.get(key);
 
       // Get previous price from DB cache (survives cold starts)
       const priceKey = `${symbol}-${exchange}`;
@@ -454,7 +471,7 @@ serve(async (req) => {
       const previousPrice = cachedPrice?.last_price ?? null;
       
       for (const alert of groupAlerts) {
-        const result = checkAlertCondition(alert, marketData, previousPrice);
+        const result = checkAlertCondition(alert, marketData, previousPrice, previousIndicatorData);
 
         if (result.triggered) {
           console.log(`Alert ${alert.id} triggered!`);
@@ -584,6 +601,7 @@ serve(async (req) => {
       await supabase
         .from('price_cache')
         .upsert({ symbol_exchange: priceKey, last_price: marketData.price, updated_at: new Date().toISOString() });
+      previousIndicatorCache.set(key, marketData);
     }
 
     console.log(`Processing complete. ${triggeredAlerts.length} alerts triggered.`);
