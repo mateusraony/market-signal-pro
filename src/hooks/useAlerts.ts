@@ -176,7 +176,7 @@ export function useAlerts() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['alerts'] });
+      queryClient.invalidateQueries({ queryKey: ['alerts', ownerId] });
       toast.success('Todos os alertas reativados');
     },
     onError: (error) => {
