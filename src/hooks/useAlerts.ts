@@ -5,16 +5,24 @@ import { toast } from 'sonner';
 import { Json } from '@/integrations/supabase/types';
 import { useAuth } from '@/contexts/AuthContext';
 
+const PUBLIC_USER_ID = '00000000-0000-0000-0000-000000000000';
+
+function getOwnerId(userId?: string) {
+  return userId ?? PUBLIC_USER_ID;
+}
+
 export function useAlerts() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const ownerId = getOwnerId(user?.id);
 
   const alertsQuery = useQuery({
-    queryKey: ['alerts'],
+    queryKey: ['alerts', ownerId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('alerts')
         .select('*')
+        .eq('user_id', ownerId)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
@@ -23,7 +31,6 @@ export function useAlerts() {
         params: item.params as unknown as AlertParams,
       })) as Alert[];
     },
-    enabled: !!user,
   });
 
   const createAlert = useMutation({
@@ -35,11 +42,10 @@ export function useAlerts() {
       params: AlertParams;
       mode: TriggerMode;
     }) => {
-      if (!user) throw new Error('Not authenticated');
       const { data, error } = await supabase
         .from('alerts')
         .insert({
-          user_id: user.id,
+          user_id: ownerId,
           symbol: alert.symbol.toUpperCase(),
           exchange: alert.exchange.toLowerCase(),
           type: alert.type,
@@ -54,7 +60,7 @@ export function useAlerts() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['alerts'] });
+      queryClient.invalidateQueries({ queryKey: ['alerts', ownerId] });
       toast.success('Alerta criado com sucesso');
     },
     onError: (error) => {
@@ -80,7 +86,7 @@ export function useAlerts() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['alerts'] });
+      queryClient.invalidateQueries({ queryKey: ['alerts', ownerId] });
       toast.success('Alerta atualizado');
     },
     onError: (error) => {
@@ -98,7 +104,7 @@ export function useAlerts() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['alerts'] });
+      queryClient.invalidateQueries({ queryKey: ['alerts', ownerId] });
       toast.success('Alerta excluído');
     },
     onError: (error) => {
@@ -116,7 +122,7 @@ export function useAlerts() {
       if (error) throw error;
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['alerts'] });
+      queryClient.invalidateQueries({ queryKey: ['alerts', ownerId] });
       toast.success(variables.paused ? 'Alerta pausado' : 'Alerta reativado');
     },
     onError: (error) => {
@@ -134,7 +140,7 @@ export function useAlerts() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['alerts'] });
+      queryClient.invalidateQueries({ queryKey: ['alerts', ownerId] });
       toast.success('Alerta reativado com sucesso');
     },
     onError: (error) => {
@@ -152,7 +158,7 @@ export function useAlerts() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['alerts'] });
+      queryClient.invalidateQueries({ queryKey: ['alerts', ownerId] });
       toast.success('Todos os alertas pausados');
     },
     onError: (error) => {
