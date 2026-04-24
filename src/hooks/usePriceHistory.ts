@@ -125,7 +125,6 @@ export function usePriceHistory(symbol: string, exchange?: string, maxPoints: nu
       if (!document.hidden) fetchPrice();
     };
     document.addEventListener('visibilitychange', handleVisibility);
-    return () => clearInterval(interval);
     return () => {
       clearInterval(interval);
       document.removeEventListener('visibilitychange', handleVisibility);
