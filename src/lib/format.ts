@@ -14,6 +14,23 @@ export function formatToBRTWithSeconds(date: string | Date): string {
   return format(zonedDate, "dd/MM/yyyy HH:mm:ss", { locale: ptBR });
 }
 
+export function formatBRTTooltip(date: string | Date): string {
+  const zonedDate = toZonedTime(new Date(date), BRT_TIMEZONE);
+  return `${format(zonedDate, "dd/MM/yyyy HH:mm:ss", { locale: ptBR })} BRT`;
+}
+
+export function formatRefreshStatus(date: string | Date | null, hasError = false): string {
+  if (hasError) return 'erro';
+  if (!date) return 'aguardando…';
+  const seconds = Math.max(0, Math.floor((Date.now() - new Date(date).getTime()) / 1000));
+  if (seconds < 10) return 'atualizado agora';
+  if (seconds < 60) return `atualizado há ${seconds}s`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `atualizado há ${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  return `atualizado há ${hours}h`;
+}
+
 export function formatRelativeTime(date: string | Date): string {
   return formatDistanceToNow(new Date(date), { 
     addSuffix: true, 

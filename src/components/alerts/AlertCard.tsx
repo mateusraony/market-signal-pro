@@ -1,5 +1,5 @@
 import { Alert, formatAlertType, formatTimeframe, getAlertTypeColor } from '@/types/alerts';
-import { formatPrice, formatToBRT, getCurrencySymbol } from '@/lib/format';
+import { formatBRTTooltip, formatPrice, formatRefreshStatus, formatToBRT, getCurrencySymbol } from '@/lib/format';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -175,9 +175,14 @@ export function AlertCard({ alert, onTogglePause, onDelete, onEdit, onReactivate
       <CardContent className="space-y-3">
         {/* Live Price */}
         {livePrice && (
-          <div className="flex items-center justify-between p-2 rounded-lg bg-muted/30">
-            <span className="text-sm text-muted-foreground">Preço atual:</span>
-            <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-2 p-2 rounded-lg bg-muted/30 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <span className="text-sm text-muted-foreground">Preço atual:</span>
+              <p className="text-[10px] font-mono text-muted-foreground" title={formatBRTTooltip(livePrice.lastUpdate)}>
+                {formatRefreshStatus(livePrice.lastUpdate, !!livePrice.error)} · {formatBRTTooltip(livePrice.lastUpdate)}
+              </p>
+            </div>
+            <div className="flex items-center gap-2 self-start sm:self-auto">
               <span className="font-mono font-bold">{getCurrencySymbol(alert.symbol)}{formatPrice(livePrice.price)}</span>
               <Badge 
                 variant="outline" 
