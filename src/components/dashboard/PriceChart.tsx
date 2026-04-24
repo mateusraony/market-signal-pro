@@ -15,7 +15,7 @@ import { usePriceHistory } from '@/hooks/usePriceHistory';
 import { TrendingUp, TrendingDown, Wifi, WifiOff, ArrowUp, ArrowDown, AlertTriangle, Target } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNotificationSound } from '@/hooks/useNotificationSound';
-import { getCurrencySymbol } from '@/lib/format';
+import { formatBRTTooltip, getCurrencySymbol } from '@/lib/format';
 
 interface PriceChartProps {
   symbol: string;
@@ -24,7 +24,7 @@ interface PriceChartProps {
 }
 
 export function PriceChart({ symbol, exchange, targetPrice }: PriceChartProps) {
-  const { priceHistory, currentPrice, change24h, isConnected, high24h, low24h, lastUpdate, lastError } = usePriceHistory(symbol, exchange);
+  const { priceHistory, currentPrice, change24h, isConnected, high24h, low24h, lastUpdate, fetchedAt, lastError } = usePriceHistory(symbol, exchange);
   const currency = getCurrencySymbol(symbol);
   const { playAlertSound } = useNotificationSound();
   const [hasAlerted, setHasAlerted] = useState(false);
@@ -46,6 +46,9 @@ export function PriceChart({ symbol, exchange, targetPrice }: PriceChartProps) {
       timeZone: 'America/Sao_Paulo',
     });
   }, [lastUpdate]);
+
+  const lastUpdateFullLabel = useMemo(() => lastUpdate ? formatBRTTooltip(lastUpdate) : 'Sem atualização', [lastUpdate]);
+  const fetchedAtLabel = useMemo(() => fetchedAt ? formatBRTTooltip(fetchedAt) : null, [fetchedAt]);
 
   const isStale = secondsAgo > 15;
 
@@ -191,7 +194,7 @@ export function PriceChart({ symbol, exchange, targetPrice }: PriceChartProps) {
               title={
                 lastError
                   ? `Erro: ${lastError}`
-                  : `Última atualização (BRT): ${lastUpdateLabel}`
+                  : `Preço atualizado em: ${lastUpdateFullLabel}${fetchedAtLabel ? `\nConsulta executada em: ${fetchedAtLabel}` : ''}`
               }
             >
               <span
@@ -206,7 +209,7 @@ export function PriceChart({ symbol, exchange, targetPrice }: PriceChartProps) {
             </div>
             <div
               className="hidden sm:block text-[10px] font-mono text-muted-foreground"
-              title="Horário de Brasília"
+              title={fetchedAtLabel ? `Consulta executada em ${fetchedAtLabel}` : 'Horário de Brasília'}
             >
               {lastUpdateLabel} BRT
             </div>
@@ -311,6 +314,7 @@ export function PriceChart({ symbol, exchange, targetPrice }: PriceChartProps) {
                   fontSize: '12px',
                 }}
                 labelStyle={{ color: 'hsl(var(--foreground))' }}
+                labelFormatter={(_, payload) => payload?.[0]?.payload?.fullTime ? `${payload[0].payload.fullTime} BRT` : ''}
                 formatter={(value: number) => [
                   `${currency}${value >= 1 ? value.toFixed(4) : value.toFixed(8)}`,
                   'Preço'
