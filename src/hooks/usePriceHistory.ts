@@ -42,6 +42,7 @@ export function usePriceHistory(symbol: string, exchange?: string, maxPoints: nu
   }, []);
 
   const fetchPrice = useCallback(async () => {
+    if (typeof document !== 'undefined' && document.hidden) return;
     try {
       const { data, error } = await supabase.functions.invoke('price-proxy', {
         body: { action: 'ticker', symbol: symbol.toUpperCase(), exchange },
@@ -119,8 +120,16 @@ export function usePriceHistory(symbol: string, exchange?: string, maxPoints: nu
     }
 
     fetchPrice();
-    const interval = setInterval(fetchPrice, 5000);
+    const interval = setInterval(fetchPrice, 15000);
+    const handleVisibility = () => {
+      if (!document.hidden) fetchPrice();
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
     return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, [symbol, fetchPrice]);
 
   return { priceHistory, currentPrice, change24h, isConnected, high24h, low24h, lastUpdate, fetchedAt, lastError };
