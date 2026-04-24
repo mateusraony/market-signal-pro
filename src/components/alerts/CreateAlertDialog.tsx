@@ -170,7 +170,7 @@ export function CreateAlertDialog({ trigger }: CreateAlertDialogProps) {
       icon: Volume2,
       title: 'Alerta de Volume',
       description: 'Notifica quando volume anormal for detectado',
-      color: 'text-purple-500 bg-purple-500/10 border-purple-500/20',
+      color: 'text-primary bg-primary/10 border-primary/20',
     },
   ];
 
@@ -184,7 +184,7 @@ export function CreateAlertDialog({ trigger }: CreateAlertDialogProps) {
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>
             {step === 'type' ? 'Criar Novo Alerta' : 
@@ -246,7 +246,7 @@ export function CreateAlertDialog({ trigger }: CreateAlertDialogProps) {
                 <RadioGroup 
                   value={timeframe} 
                   onValueChange={(v) => setTimeframe(v as AlertTimeframe)}
-                  className="flex gap-2"
+                  className="grid grid-cols-2 gap-2 sm:flex"
                 >
                   {TIMEFRAMES.map((tf) => (
                     <div key={tf.value} className="flex-1">
@@ -486,7 +486,7 @@ export function CreateAlertDialog({ trigger }: CreateAlertDialogProps) {
               <RadioGroup 
                 value={mode} 
                 onValueChange={(v) => setMode(v as TriggerMode)}
-                className="flex gap-2"
+                className="grid grid-cols-2 gap-2"
               >
                 <div className="flex-1">
                   <RadioGroupItem value="once" id="mode-once" className="peer sr-only" />
@@ -518,7 +518,7 @@ export function CreateAlertDialog({ trigger }: CreateAlertDialogProps) {
             </div>
 
             {/* Actions */}
-            <div className="flex gap-3 pt-4">
+            <div className="flex flex-col-reverse gap-3 pt-4 sm:flex-row">
               <Button 
                 variant="outline" 
                 onClick={() => setStep('type')}
