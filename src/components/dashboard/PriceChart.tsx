@@ -103,7 +103,7 @@ export function PriceChart({ symbol, exchange, targetPrice }: PriceChartProps) {
   }, [priceHistory]);
 
   const isPositive = change24h !== null && change24h >= 0;
-  const chartColor = isPositive ? 'hsl(var(--chart-2))' : 'hsl(var(--destructive))';
+  const chartColor = isPositive ? 'hsl(var(--chart-bullish))' : 'hsl(var(--destructive))';
   
   // Card border color based on proximity
   const cardBorderClass = useMemo(() => {
@@ -162,7 +162,7 @@ export function PriceChart({ symbol, exchange, targetPrice }: PriceChartProps) {
             <div
               className={cn(
                 "flex items-center gap-1.5 text-[10px] font-mono px-2 py-1 rounded-md border",
-                refreshStatus.tone === 'ok' && "border-chart-2/30 bg-chart-2/10 text-chart-2",
+                refreshStatus.tone === 'ok' && "border-chart-bullish/30 bg-chart-bullish/10 text-chart-bullish",
                 refreshStatus.tone === 'warn' && "border-warning/30 bg-warning/10 text-warning",
                 refreshStatus.tone === 'error' && "border-destructive/40 bg-destructive/10 text-destructive",
               )}
@@ -175,7 +175,7 @@ export function PriceChart({ symbol, exchange, targetPrice }: PriceChartProps) {
               <span
                 className={cn(
                   "h-1.5 w-1.5 rounded-full",
-                  refreshStatus.tone === 'ok' && "bg-chart-2 animate-pulse",
+                  refreshStatus.tone === 'ok' && "bg-chart-bullish animate-pulse",
                   refreshStatus.tone === 'warn' && "bg-warning",
                   refreshStatus.tone === 'error' && "bg-destructive",
                 )}
@@ -189,7 +189,7 @@ export function PriceChart({ symbol, exchange, targetPrice }: PriceChartProps) {
               {lastUpdateLabel} BRT
             </div>
             {isConnected ? (
-              <Wifi className="h-4 w-4 text-chart-2" />
+              <Wifi className="h-4 w-4 text-chart-bullish" />
             ) : (
               <WifiOff className="h-4 w-4 text-muted-foreground" />
             )}
@@ -208,7 +208,7 @@ export function PriceChart({ symbol, exchange, targetPrice }: PriceChartProps) {
             </div>
             <div className={cn(
               "flex items-center gap-1 text-sm font-medium",
-              isPositive ? "text-chart-2" : "text-destructive"
+              isPositive ? "text-chart-bullish" : "text-destructive"
             )}>
               {isPositive ? (
                 <TrendingUp className="h-4 w-4" />
@@ -241,7 +241,7 @@ export function PriceChart({ symbol, exchange, targetPrice }: PriceChartProps) {
               </>
             ) : (
               <>
-                <div className="flex items-center gap-1 text-chart-2">
+                <div className="flex items-center gap-1 text-chart-bullish">
                   <ArrowUp className="h-3 w-3" />
                   <span className="font-mono">{currency}{high24h?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                 </div>
