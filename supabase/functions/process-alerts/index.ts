@@ -43,6 +43,7 @@ interface MarketData {
   macd: { line: number; signal: number; histogram: number } | null;
   volumeRatio: number | null;
   candles: any[];
+  previous?: MarketData;
 }
 
 const previousIndicatorCache = new Map<string, MarketData>();
@@ -319,12 +320,35 @@ async function fetchMarketData(
 
     const indicators = await indicatorResponse.json();
 
+    let previous: MarketData | undefined;
+    if (candles.length > 35) {
+      const previousIndicatorResponse = await fetch(`${supabaseUrl}/functions/v1/calculate-indicators`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        },
+        body: JSON.stringify({ candles: candles.slice(0, -1) }),
+      });
+      if (previousIndicatorResponse.ok) {
+        const previousIndicators = await previousIndicatorResponse.json();
+        previous = {
+          price: previousIndicators.currentPrice || candles[candles.length - 2]?.close || price,
+          rsi: previousIndicators.rsi,
+          macd: previousIndicators.macd,
+          volumeRatio: previousIndicators.volumeRatio,
+          candles: candles.slice(0, -1),
+        };
+      }
+    }
+
     return {
       price: indicators.currentPrice || price,
       rsi: indicators.rsi,
       macd: indicators.macd,
       volumeRatio: indicators.volumeRatio,
       candles,
+      previous,
     };
   } catch (error) {
     console.error('Error fetching market data:', error);
@@ -459,7 +483,7 @@ serve(async (req) => {
       }
 
       console.log(`Data for ${symbol}: price=${marketData.price}, rsi=${marketData.rsi}, macd=${marketData.macd?.line}`);
-      const previousIndicatorData = previousIndicatorCache.get(key);
+      const previousIndicatorData = marketData.previous || previousIndicatorCache.get(key);
 
       // Get previous price from DB cache (survives cold starts)
       const priceKey = `${symbol}-${exchange}`;
