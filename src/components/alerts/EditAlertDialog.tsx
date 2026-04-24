@@ -158,7 +158,7 @@ export function EditAlertDialog({ alert, open, onOpenChange }: EditAlertDialogPr
       case 'macd_cross':
         return <BarChart3 className="w-5 h-5 text-success" />;
       case 'volume_spike':
-        return <Volume2 className="w-5 h-5 text-purple-500" />;
+        return <Volume2 className="w-5 h-5 text-primary" />;
     }
   };
 
@@ -176,7 +176,7 @@ export function EditAlertDialog({ alert, open, onOpenChange }: EditAlertDialogPr
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {getTypeIcon()}
@@ -209,7 +209,7 @@ export function EditAlertDialog({ alert, open, onOpenChange }: EditAlertDialogPr
               <RadioGroup 
                 value={timeframe} 
                 onValueChange={(v) => setTimeframe(v as AlertTimeframe)}
-                className="flex gap-2"
+                className="grid grid-cols-2 gap-2 sm:flex"
               >
                 {TIMEFRAMES.map((tf) => (
                   <div key={tf.value} className="flex-1">
