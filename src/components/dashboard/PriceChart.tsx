@@ -116,6 +116,28 @@ export function PriceChart({ symbol, exchange, targetPrice }: PriceChartProps) {
     }
   }, [proximityInfo?.level]);
 
+  if (lastError && priceHistory.length === 0) {
+    return (
+      <Card className="bg-card/50 border-destructive/40">
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between gap-3">
+            <CardTitle className="min-w-0 text-lg font-mono flex items-center gap-2">
+              <span className="truncate">{symbol}</span>
+              <Badge variant="outline" className="text-xs uppercase">{exchange}</Badge>
+            </CardTitle>
+            <WifiOff className="h-4 w-4 shrink-0 text-destructive" />
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Badge variant="outline" className="border-destructive/40 bg-destructive/10 text-destructive">
+            erro
+          </Badge>
+          <p className="text-sm text-muted-foreground">Não foi possível carregar este preço agora. Tentando novamente automaticamente.</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (priceHistory.length === 0) {
     return (
       <Card className="bg-card/50 border-border/50">
