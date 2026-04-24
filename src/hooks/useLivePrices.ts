@@ -6,6 +6,8 @@ interface PriceData {
   price: number;
   change24h: number;
   lastUpdate: Date;
+  fetchedAt?: Date;
+  error?: string;
 }
 
 interface UseLivePricesReturn {
@@ -15,7 +17,7 @@ interface UseLivePricesReturn {
 }
 
 async function fetchViaProxy(action: string, params: Record<string, unknown>) {
-  const { data, error } = await supabase.functions.invoke('price-proxy', {
+    const { data, error } = await supabase.functions.invoke('price-proxy', {
     body: { action, ...params },
   });
   if (error) throw new Error(error.message);
@@ -42,6 +44,7 @@ export function useLivePrices(symbols: string[]): UseLivePricesReturn {
           price: parseFloat(ticker.lastPrice),
           change24h: parseFloat(ticker.priceChangePercent),
           lastUpdate: ticker.serverTime ? new Date(ticker.serverTime) : new Date(),
+          fetchedAt: ticker.fetchedAt ? new Date(ticker.fetchedAt) : undefined,
         };
       }
 
@@ -76,9 +79,11 @@ export function useLivePrice(symbol: string): PriceData | null {
         price: parseFloat(data.lastPrice),
         change24h: parseFloat(data.priceChangePercent),
         lastUpdate: data.serverTime ? new Date(data.serverTime) : new Date(),
+        fetchedAt: data.fetchedAt ? new Date(data.fetchedAt) : undefined,
       });
     } catch (error) {
       console.error('Price proxy error for', symbol, error);
+      setPrice(prev => prev ? { ...prev, error: error instanceof Error ? error.message : String(error) } : null);
     }
   }, [symbol]);
 
