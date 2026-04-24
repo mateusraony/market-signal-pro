@@ -64,11 +64,11 @@ export function SymbolSearchCombobox({
   const getExchangeBadgeStyle = (ex: ExchangeType) => {
     switch (ex) {
       case 'binance':
-        return 'text-yellow-500 border-yellow-500/30';
+        return 'text-warning border-warning/30';
       case 'bybit':
-        return 'text-orange-500 border-orange-500/30';
+        return 'text-primary border-primary/30';
       case 'forex':
-        return 'text-emerald-500 border-emerald-500/30';
+        return 'text-success border-success/30';
       default:
         return 'text-muted-foreground border-border';
     }
@@ -101,8 +101,8 @@ export function SymbolSearchCombobox({
           aria-expanded={open}
           className="w-full justify-between font-mono"
         >
-          <span className="flex items-center gap-2">
-            {value || 'Selecione um símbolo...'}
+          <span className="flex min-w-0 items-center gap-2">
+            <span className="truncate">{value || 'Selecione um símbolo...'}</span>
             {value && (
               <Badge variant="outline" className={cn("text-xs", getExchangeBadgeStyle(exchange))}>
                 {exchange}
@@ -112,7 +112,7 @@ export function SymbolSearchCombobox({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[350px] p-0" align="start">
+        <PopoverContent className="w-[min(350px,calc(100vw-2rem))] p-0" align="start">
         <Command shouldFilter={false}>
           <div className="flex items-center border-b px-3">
             <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />

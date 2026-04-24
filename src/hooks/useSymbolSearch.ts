@@ -174,15 +174,20 @@ export function useSymbolSearch(exchange: ExchangeType | 'all' = 'all') {
     const binanceSymbols = binanceQuery.data ?? [];
     const bybitSymbols = bybitQuery.data ?? [];
     
-    if (exchange === 'binance') return binanceSymbols;
+    if (exchange === 'binance') {
+      const map = new Map<string, SymbolInfo>();
+      DEFAULT_CRYPTO_SYMBOLS.filter(s => s.exchange === 'binance').forEach(s => map.set(s.symbol, s));
+      binanceSymbols.forEach(s => map.set(s.symbol, s));
+      return Array.from(map.values());
+    }
     if (exchange === 'bybit') return bybitSymbols;
     if (exchange === 'forex') return FOREX_SYMBOLS;
     
     // Merge and dedupe (prefer Binance if same symbol exists)
     const symbolMap = new Map<string, SymbolInfo>();
     
-    // Add forex symbols first
-    FOREX_SYMBOLS.forEach(s => symbolMap.set(s.symbol, s));
+    // Add known defaults first so BRL/USD/USDT pairs remain discoverable even if an upstream symbol API is slow.
+    DEFAULT_SYMBOLS.forEach(s => symbolMap.set(s.symbol, s));
     
     binanceSymbols.forEach(s => symbolMap.set(s.symbol, s));
     bybitSymbols.forEach(s => {

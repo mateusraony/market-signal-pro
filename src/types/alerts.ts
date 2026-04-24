@@ -103,7 +103,7 @@ export function getAlertTypeColor(type: AlertType): string {
     'price_level': 'text-primary',
     'rsi_level': 'text-warning',
     'macd_cross': 'text-success',
-    'volume_spike': 'text-purple-500',
+    'volume_spike': 'text-primary',
   };
   return map[type];
 }

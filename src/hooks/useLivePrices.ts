@@ -19,7 +19,8 @@ async function fetchViaProxy(action: string, params: Record<string, unknown>) {
     body: { action, ...params },
   });
   if (error) throw new Error(error.message);
-  return data;
+  if (data?.ok === false) throw new Error(data.error || data.code || 'Erro ao carregar preço');
+  return data?.data ?? data;
 }
 
 export function useLivePrices(symbols: string[]): UseLivePricesReturn {
@@ -32,14 +33,15 @@ export function useLivePrices(symbols: string[]): UseLivePricesReturn {
 
     try {
       const data = await fetchViaProxy('tickers', { symbols });
+      const tickers = Array.isArray(data) ? data : [];
 
       const newPrices: Record<string, PriceData> = {};
-      for (const ticker of data) {
+      for (const ticker of tickers) {
         newPrices[ticker.symbol] = {
           symbol: ticker.symbol,
           price: parseFloat(ticker.lastPrice),
           change24h: parseFloat(ticker.priceChangePercent),
-          lastUpdate: new Date(),
+          lastUpdate: ticker.serverTime ? new Date(ticker.serverTime) : new Date(),
         };
       }
 
@@ -73,7 +75,7 @@ export function useLivePrice(symbol: string): PriceData | null {
         symbol: data.symbol,
         price: parseFloat(data.lastPrice),
         change24h: parseFloat(data.priceChangePercent),
-        lastUpdate: new Date(),
+        lastUpdate: data.serverTime ? new Date(data.serverTime) : new Date(),
       });
     } catch (error) {
       console.error('Price proxy error for', symbol, error);

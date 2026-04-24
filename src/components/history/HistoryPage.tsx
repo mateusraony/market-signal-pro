@@ -74,7 +74,7 @@ export function HistoryPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-3">
             <History className="w-6 h-6 text-primary" />
@@ -176,7 +176,7 @@ export function HistoryPage() {
           </p>
         </div>
       ) : (
-        <div className="rounded-xl border border-border overflow-hidden">
+        <div className="overflow-x-auto rounded-xl border border-border">
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/30">
@@ -210,7 +210,7 @@ export function HistoryPage() {
                       item.type === 'price_level' && 'text-primary border-primary/30',
                       item.type === 'rsi_level' && 'text-warning border-warning/30',
                       item.type === 'macd_cross' && 'text-success border-success/30',
-                      item.type === 'volume_spike' && 'text-purple-500 border-purple-500/30',
+                      item.type === 'volume_spike' && 'text-primary border-primary/30',
                     )}>
                       {formatAlertType(item.type)}
                     </Badge>

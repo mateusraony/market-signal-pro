@@ -83,7 +83,7 @@ export function AlertCard({ alert, onTogglePause, onDelete, onEdit, onReactivate
               alert.type === 'price_level' && "bg-primary/10 text-primary",
               alert.type === 'rsi_level' && "bg-warning/10 text-warning",
               alert.type === 'macd_cross' && "bg-success/10 text-success",
-              alert.type === 'volume_spike' && "bg-purple-500/10 text-purple-500"
+              alert.type === 'volume_spike' && "bg-primary/10 text-primary"
             )}>
               {getTypeIcon()}
             </div>

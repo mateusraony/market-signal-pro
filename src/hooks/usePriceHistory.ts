@@ -59,18 +59,19 @@ export function usePriceHistory(symbol: string, exchange?: string, maxPoints: nu
         return;
       }
 
-      const price = parseFloat(data.lastPrice);
+      const payload = data?.data ?? data;
+      const price = parseFloat(payload?.lastPrice);
       if (Number.isNaN(price)) {
         throw new Error('Invalid price payload');
       }
 
       // Prefer server timestamp (BRT-derivable from UTC ISO) when present
-      const serverTime = data.serverTime ? new Date(data.serverTime) : new Date();
+      const serverTime = (payload?.serverTime || data?.serverTime) ? new Date(payload?.serverTime || data?.serverTime) : new Date();
 
       setCurrentPrice(price);
-      setChange24h(parseFloat(data.priceChangePercent));
-      setHigh24h(parseFloat(data.highPrice));
-      setLow24h(parseFloat(data.lowPrice));
+      setChange24h(parseFloat(payload.priceChangePercent));
+      setHigh24h(parseFloat(payload.highPrice));
+      setLow24h(parseFloat(payload.lowPrice));
       setIsConnected(true);
       setLastUpdate(serverTime);
       setLastError(null);
