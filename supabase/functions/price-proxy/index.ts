@@ -178,6 +178,7 @@ async function fetchYahooTicker(symbol: string): Promise<any> {
         const lastPrice = meta.regularMarketPrice;
         const priceChange = lastPrice - prevClose;
         const priceChangePercent = prevClose ? ((priceChange / prevClose) * 100) : 0;
+        const marketTime = meta.regularMarketTime ? new Date(meta.regularMarketTime * 1000).toISOString() : new Date().toISOString();
         return {
           symbol: symbol.toUpperCase(),
           lastPrice: String(lastPrice),
@@ -187,7 +188,8 @@ async function fetchYahooTicker(symbol: string): Promise<any> {
           lowPrice: String(meta.regularMarketDayLow || lastPrice),
           openPrice: String(prevClose),
           volume: String(meta.regularMarketVolume || 0),
-          serverTime: new Date().toISOString(),
+          serverTime: marketTime,
+          fetchedAt: new Date().toISOString(),
         };
       }
 
@@ -197,6 +199,7 @@ async function fetchYahooTicker(symbol: string): Promise<any> {
         const prevClose = quote.regularMarketPreviousClose || lastPrice;
         const priceChange = lastPrice - prevClose;
         const priceChangePercent = prevClose ? ((priceChange / prevClose) * 100) : 0;
+        const marketTime = quote.regularMarketTime ? new Date(quote.regularMarketTime * 1000).toISOString() : new Date().toISOString();
         return {
           symbol: symbol.toUpperCase(),
           lastPrice: String(lastPrice),
@@ -206,7 +209,8 @@ async function fetchYahooTicker(symbol: string): Promise<any> {
           lowPrice: String(quote.regularMarketDayLow || lastPrice),
           openPrice: String(prevClose),
           volume: String(quote.regularMarketVolume || 0),
-          serverTime: new Date().toISOString(),
+          serverTime: marketTime,
+          fetchedAt: new Date().toISOString(),
         };
       }
 
