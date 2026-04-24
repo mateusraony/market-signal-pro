@@ -161,9 +161,9 @@ export function PriceChart({ symbol, exchange, targetPrice }: PriceChartProps) {
   return (
     <Card className={cn("bg-card/50 transition-all duration-300", cardBorderClass)}>
       <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-mono flex items-center gap-2">
-            {symbol}
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <CardTitle className="min-w-0 text-lg font-mono flex flex-wrap items-center gap-2">
+            <span className="truncate">{symbol}</span>
             <Badge variant="outline" className="text-xs uppercase">{exchange}</Badge>
             {proximityInfo?.level && (
               <Badge 
@@ -180,7 +180,7 @@ export function PriceChart({ symbol, exchange, targetPrice }: PriceChartProps) {
               </Badge>
             )}
           </CardTitle>
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
             <div
               className={cn(
                 "flex items-center gap-1.5 text-[10px] font-mono px-2 py-1 rounded-md border",
