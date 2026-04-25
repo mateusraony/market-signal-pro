@@ -33,12 +33,23 @@ export function AlertsPage() {
   const [editingAlert, setEditingAlert] = useState<Alert | null>(null);
   const [deletingAlertId, setDeletingAlertId] = useState<string | null>(null);
 
+  const now = Date.now();
+  const isTriggered = (alert: Alert) => {
+    // "Disparado" = modo once já consumido OR ainda em cooldown ativo
+    if (!alert.active && !alert.paused) return true;
+    if (alert.cooldown_until && new Date(alert.cooldown_until).getTime() > now) return true;
+    return false;
+  };
+
   const filteredAlerts = alerts.filter((alert) => {
     const matchesSearch = alert.symbol.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = filterType === 'all' || alert.type === filterType;
-    const matchesStatus = filterStatus === 'all' || 
-      (filterStatus === 'active' && !alert.paused && alert.active) ||
-      (filterStatus === 'paused' && alert.paused);
+    const triggered = isTriggered(alert);
+    const matchesStatus =
+      filterStatus === 'all' ||
+      (filterStatus === 'active' && alert.active && !alert.paused && !triggered) ||
+      (filterStatus === 'paused' && alert.paused) ||
+      (filterStatus === 'triggered' && triggered);
     return matchesSearch && matchesType && matchesStatus;
   });
 
@@ -58,7 +69,8 @@ export function AlertsPage() {
   };
 
   // Stats
-  const activeCount = alerts.filter(a => a.active && !a.paused).length;
+  const triggeredCount = alerts.filter(isTriggered).length;
+  const activeCount = alerts.filter(a => a.active && !a.paused && !isTriggered(a)).length;
   const pausedCount = alerts.filter(a => a.paused).length;
   const totalCount = alerts.length;
 
