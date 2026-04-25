@@ -428,8 +428,22 @@ serve(async (req) => {
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
+  // Parse optional body to support backfill mode
+  let isBackfill = false;
+  let backfillFromIso: string | null = null;
   try {
-    console.log('Starting alert processing...');
+    const body = await req.clone().json().catch(() => null);
+    if (body && body.retroactive === true) {
+      isBackfill = true;
+      backfillFromIso = body.from || null;
+      console.log(`[process-alerts] Backfill mode active. From: ${backfillFromIso}`);
+    }
+  } catch {
+    // no body, normal run
+  }
+
+  try {
+    console.log(`Starting alert processing... (retroactive=${isBackfill})`);
 
     // Get all active, non-paused alerts
     const { data: alerts, error: alertsError } = await supabase
@@ -531,7 +545,7 @@ serve(async (req) => {
             }
           }
 
-          // Record in history (ALWAYS, even during quiet hours)
+          // Record in history (ALWAYS, even during quiet hours). Mark retroactive when in backfill.
           const historyRecord = {
             alert_id: alert.id,
             user_id: alert.user_id,
@@ -541,7 +555,7 @@ serve(async (req) => {
             timeframe: alert.timeframe,
             event_time_utc: now.toISOString(),
             detected_time_utc: now.toISOString(),
-            retroactive: false,
+            retroactive: isBackfill,
             price_at_event: marketData.price,
             rsi_at_event: marketData.rsi,
             macd_line_at_event: marketData.macd?.line,
@@ -551,10 +565,12 @@ serve(async (req) => {
             prob_up: result.probUp,
             prob_down: result.probDown,
             confidence_level: result.confidence,
-            comment_ai: isQuietHours 
-              ? `[🔇 Notificação suprimida por horário de silêncio] ${result.comment || ''}`
-              : result.comment,
-            model_version: 'v1.0-rules',
+            comment_ai: isBackfill
+              ? `[♻️ Detectado retroativamente após downtime${backfillFromIso ? ` desde ${backfillFromIso}` : ''}] ${result.comment || ''}`
+              : isQuietHours
+                ? `[🔇 Notificação suprimida por horário de silêncio] ${result.comment || ''}`
+                : result.comment,
+            model_version: isBackfill ? 'v1.0-rules-backfill' : 'v1.0-rules',
           };
 
           const { error: historyError } = await supabase
@@ -567,8 +583,8 @@ serve(async (req) => {
             continue;
           }
 
-          // Send Telegram notification (only if NOT in quiet hours)
-          if (!isQuietHours && profile?.telegram_id) {
+          // Send Telegram notification (only if NOT in quiet hours AND NOT a retroactive backfill)
+          if (!isQuietHours && !isBackfill && profile?.telegram_id) {
             console.log(`[Alert ${alert.id}] Sending Telegram notification to ${profile.telegram_id}`);
             const alertData = {
               symbol: alert.symbol,

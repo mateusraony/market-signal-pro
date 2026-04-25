@@ -33,12 +33,23 @@ export function AlertsPage() {
   const [editingAlert, setEditingAlert] = useState<Alert | null>(null);
   const [deletingAlertId, setDeletingAlertId] = useState<string | null>(null);
 
+  const now = Date.now();
+  const isTriggered = (alert: Alert) => {
+    // "Disparado" = modo once já consumido OR ainda em cooldown ativo
+    if (!alert.active && !alert.paused) return true;
+    if (alert.cooldown_until && new Date(alert.cooldown_until).getTime() > now) return true;
+    return false;
+  };
+
   const filteredAlerts = alerts.filter((alert) => {
     const matchesSearch = alert.symbol.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = filterType === 'all' || alert.type === filterType;
-    const matchesStatus = filterStatus === 'all' || 
-      (filterStatus === 'active' && !alert.paused && alert.active) ||
-      (filterStatus === 'paused' && alert.paused);
+    const triggered = isTriggered(alert);
+    const matchesStatus =
+      filterStatus === 'all' ||
+      (filterStatus === 'active' && alert.active && !alert.paused && !triggered) ||
+      (filterStatus === 'paused' && alert.paused) ||
+      (filterStatus === 'triggered' && triggered);
     return matchesSearch && matchesType && matchesStatus;
   });
 
@@ -58,7 +69,8 @@ export function AlertsPage() {
   };
 
   // Stats
-  const activeCount = alerts.filter(a => a.active && !a.paused).length;
+  const triggeredCount = alerts.filter(isTriggered).length;
+  const activeCount = alerts.filter(a => a.active && !a.paused && !isTriggered(a)).length;
   const pausedCount = alerts.filter(a => a.paused).length;
   const totalCount = alerts.length;
 
@@ -113,7 +125,7 @@ export function AlertsPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="p-4 rounded-xl bg-card border border-border">
           <p className="text-sm text-muted-foreground">Total</p>
           <p className="text-2xl font-bold font-mono">{totalCount}</p>
@@ -125,6 +137,10 @@ export function AlertsPage() {
         <div className="p-4 rounded-xl bg-warning/10 border border-warning/20">
           <p className="text-sm text-warning">Pausados</p>
           <p className="text-2xl font-bold font-mono text-warning">{pausedCount}</p>
+        </div>
+        <div className="p-4 rounded-xl bg-primary/10 border border-primary/20">
+          <p className="text-sm text-primary">Disparados</p>
+          <p className="text-2xl font-bold font-mono text-primary">{triggeredCount}</p>
         </div>
       </div>
 
@@ -153,13 +169,14 @@ export function AlertsPage() {
           </SelectContent>
         </Select>
         <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger className="w-full sm:w-[140px]">
+          <SelectTrigger className="w-full sm:w-[160px]">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos</SelectItem>
             <SelectItem value="active">Ativos</SelectItem>
             <SelectItem value="paused">Pausados</SelectItem>
+            <SelectItem value="triggered">Disparados</SelectItem>
           </SelectContent>
         </Select>
       </div>

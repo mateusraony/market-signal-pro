@@ -20,6 +20,50 @@ serve(async (req) => {
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
   try {
+    // ===== Backfill detection =====
+    // Look at last successful scheduler_run; if gap > 3 minutes, treat as downtime
+    // and run a retroactive process pass before the normal one.
+    const { data: lastRuns } = await supabase
+      .from('system_events')
+      .select('*')
+      .eq('type', 'scheduler_run')
+      .order('start_time_utc', { ascending: false })
+      .limit(1);
+
+    let backfillResult: { processedAlerts: number; triggeredAlerts: number } | null = null;
+    let gapMinutes = 0;
+    if (lastRuns && lastRuns.length > 0) {
+      const lastRunStart = new Date(lastRuns[0].start_time_utc);
+      gapMinutes = (startTime - lastRunStart.getTime()) / 60000;
+
+      if (gapMinutes > 3) {
+        console.log(`[Scheduler] Detected downtime gap of ${gapMinutes.toFixed(1)} min — running backfill from ${lastRunStart.toISOString()}`);
+
+        try {
+          const backfillResponse = await fetch(`${SUPABASE_URL}/functions/v1/process-alerts`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+            },
+            body: JSON.stringify({
+              source: 'scheduler-backfill',
+              retroactive: true,
+              from: lastRunStart.toISOString(),
+            }),
+          });
+          if (backfillResponse.ok) {
+            backfillResult = await backfillResponse.json();
+            console.log(`[Scheduler] Backfill done. Triggered: ${backfillResult?.triggeredAlerts ?? 0}`);
+          } else {
+            console.error('[Scheduler] Backfill failed:', backfillResponse.status);
+          }
+        } catch (e) {
+          console.error('[Scheduler] Backfill error:', e);
+        }
+      }
+    }
+
     // Check for any ongoing downtime events and close them
     const { data: activeEvents } = await supabase
       .from('system_events')
@@ -42,13 +86,14 @@ serve(async (req) => {
           end_time_utc: downtimeEnd.toISOString(),
           details: { 
             ...(event.details as Record<string, unknown> || {}),
-            duration_minutes: Math.round((downtimeEnd.getTime() - downtimeStart.getTime()) / 60000)
+            duration_minutes: Math.round((downtimeEnd.getTime() - downtimeStart.getTime()) / 60000),
+            backfill_triggered: backfillResult?.triggeredAlerts ?? 0,
           }
         })
         .eq('id', event.id);
     }
 
-    // Call the process-alerts function
+    // Call the process-alerts function (normal real-time pass)
     const processResponse = await fetch(`${SUPABASE_URL}/functions/v1/process-alerts`, {
       method: 'POST',
       headers: {
@@ -66,7 +111,7 @@ serve(async (req) => {
     }
     
     const duration = Date.now() - startTime;
-    console.log(`[Scheduler] Completed in ${duration}ms. Processed: ${processResult.processedAlerts}, Triggered: ${processResult.triggeredAlerts}`);
+    console.log(`[Scheduler] Completed in ${duration}ms. Processed: ${processResult.processedAlerts}, Triggered: ${processResult.triggeredAlerts}, BackfillTriggered: ${backfillResult?.triggeredAlerts ?? 0}`);
 
     // Record scheduler run
     await supabase
@@ -79,6 +124,9 @@ serve(async (req) => {
           duration_ms: duration,
           processed_alerts: processResult.processedAlerts,
           triggered_alerts: processResult.triggeredAlerts,
+          gap_minutes_from_previous: Math.round(gapMinutes * 10) / 10,
+          backfill_processed: backfillResult?.processedAlerts ?? 0,
+          backfill_triggered: backfillResult?.triggeredAlerts ?? 0,
         },
       });
 
@@ -87,6 +135,8 @@ serve(async (req) => {
         success: true,
         duration_ms: duration,
         ...processResult,
+        backfill: backfillResult,
+        gap_minutes_from_previous: Math.round(gapMinutes * 10) / 10,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
