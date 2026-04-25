@@ -125,7 +125,7 @@ export function AlertsPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="p-4 rounded-xl bg-card border border-border">
           <p className="text-sm text-muted-foreground">Total</p>
           <p className="text-2xl font-bold font-mono">{totalCount}</p>
@@ -137,6 +137,10 @@ export function AlertsPage() {
         <div className="p-4 rounded-xl bg-warning/10 border border-warning/20">
           <p className="text-sm text-warning">Pausados</p>
           <p className="text-2xl font-bold font-mono text-warning">{pausedCount}</p>
+        </div>
+        <div className="p-4 rounded-xl bg-primary/10 border border-primary/20">
+          <p className="text-sm text-primary">Disparados</p>
+          <p className="text-2xl font-bold font-mono text-primary">{triggeredCount}</p>
         </div>
       </div>
 
