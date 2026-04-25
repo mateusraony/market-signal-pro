@@ -428,8 +428,22 @@ serve(async (req) => {
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
+  // Parse optional body to support backfill mode
+  let isBackfill = false;
+  let backfillFromIso: string | null = null;
   try {
-    console.log('Starting alert processing...');
+    const body = await req.clone().json().catch(() => null);
+    if (body && body.retroactive === true) {
+      isBackfill = true;
+      backfillFromIso = body.from || null;
+      console.log(`[process-alerts] Backfill mode active. From: ${backfillFromIso}`);
+    }
+  } catch {
+    // no body, normal run
+  }
+
+  try {
+    console.log(`Starting alert processing... (retroactive=${isBackfill})`);
 
     // Get all active, non-paused alerts
     const { data: alerts, error: alertsError } = await supabase
