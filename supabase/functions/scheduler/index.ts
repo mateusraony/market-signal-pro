@@ -124,6 +124,9 @@ serve(async (req) => {
           duration_ms: duration,
           processed_alerts: processResult.processedAlerts,
           triggered_alerts: processResult.triggeredAlerts,
+          gap_minutes_from_previous: Math.round(gapMinutes * 10) / 10,
+          backfill_processed: backfillResult?.processedAlerts ?? 0,
+          backfill_triggered: backfillResult?.triggeredAlerts ?? 0,
         },
       });
 
@@ -132,6 +135,8 @@ serve(async (req) => {
         success: true,
         duration_ms: duration,
         ...processResult,
+        backfill: backfillResult,
+        gap_minutes_from_previous: Math.round(gapMinutes * 10) / 10,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
