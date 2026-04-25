@@ -169,13 +169,14 @@ export function AlertsPage() {
           </SelectContent>
         </Select>
         <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger className="w-full sm:w-[140px]">
+          <SelectTrigger className="w-full sm:w-[160px]">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos</SelectItem>
             <SelectItem value="active">Ativos</SelectItem>
             <SelectItem value="paused">Pausados</SelectItem>
+            <SelectItem value="triggered">Disparados</SelectItem>
           </SelectContent>
         </Select>
       </div>
