@@ -116,6 +116,9 @@ export function SettingsPage() {
       {/* Scheduler History */}
       <SchedulerHistory />
 
+      {/* Scheduler Gaps & Backfill */}
+      <SchedulerGaps />
+
       {/* Sound Test */}
       <Card>
         <CardHeader>
