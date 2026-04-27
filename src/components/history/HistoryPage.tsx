@@ -195,6 +195,16 @@ export function HistoryPage() {
             <SelectItem value="1m">1M</SelectItem>
           </SelectContent>
         </Select>
+        <Select value={filterMode} onValueChange={setFilterMode}>
+          <SelectTrigger className="w-full sm:w-[180px]">
+            <SelectValue placeholder="Modo" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os modos</SelectItem>
+            <SelectItem value="realtime">Tempo real</SelectItem>
+            <SelectItem value="retroactive">Retroativos (backfill)</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Table */}
