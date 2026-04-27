@@ -41,12 +41,21 @@ export function HistoryPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [filterTimeframe, setFilterTimeframe] = useState<string>('all');
+  const [filterMode, setFilterMode] = useState<string>('all'); // all | realtime | retroactive
 
   const { data: history, isLoading } = useAlertsHistory({
     symbol: searchTerm || undefined,
     type: filterType !== 'all' ? filterType as AlertType : undefined,
     timeframe: filterTimeframe !== 'all' ? filterTimeframe as AlertTimeframe : undefined,
+    retroactive: filterMode === 'all' ? undefined : filterMode === 'retroactive',
   });
+
+  // Time-window stats (1h, 24h, 7d) - based on current filtered dataset
+  const now = Date.now();
+  const inWindow = (iso: string, ms: number) => now - new Date(iso).getTime() <= ms;
+  const last1h = history?.filter(h => inWindow(h.event_time_utc, 60 * 60 * 1000)).length ?? 0;
+  const last24h = history?.filter(h => inWindow(h.event_time_utc, 24 * 60 * 60 * 1000)).length ?? 0;
+  const last7d = history?.filter(h => inWindow(h.event_time_utc, 7 * 24 * 60 * 60 * 1000)).length ?? 0;
 
   const getDirectionIcon = (direction: string | null) => {
     if (direction === 'up') return <TrendingUp className="w-4 h-4 text-success" />;
@@ -92,6 +101,28 @@ export function HistoryPage() {
           <Download className="w-4 h-4 mr-2" />
           Exportar CSV
         </Button>
+      </div>
+
+      {/* Time-window stats */}
+      <div className="grid grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-sm text-muted-foreground">Últimas 1h</p>
+            <p className="text-2xl font-bold font-mono text-primary">{last1h}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-sm text-muted-foreground">Últimas 24h</p>
+            <p className="text-2xl font-bold font-mono text-primary">{last24h}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-sm text-muted-foreground">Últimos 7d</p>
+            <p className="text-2xl font-bold font-mono text-primary">{last7d}</p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Stats */}
@@ -162,6 +193,16 @@ export function HistoryPage() {
             <SelectItem value="1d">1D</SelectItem>
             <SelectItem value="1w">1W</SelectItem>
             <SelectItem value="1m">1M</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={filterMode} onValueChange={setFilterMode}>
+          <SelectTrigger className="w-full sm:w-[180px]">
+            <SelectValue placeholder="Modo" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os modos</SelectItem>
+            <SelectItem value="realtime">Tempo real</SelectItem>
+            <SelectItem value="retroactive">Retroativos (backfill)</SelectItem>
           </SelectContent>
         </Select>
       </div>

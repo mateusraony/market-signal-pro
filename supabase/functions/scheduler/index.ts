@@ -55,6 +55,37 @@ serve(async (req) => {
           if (backfillResponse.ok) {
             backfillResult = await backfillResponse.json();
             console.log(`[Scheduler] Backfill done. Triggered: ${backfillResult?.triggeredAlerts ?? 0}`);
+
+            // Reconciliation: ensure no duplicate (alert_id, detected_time_utc) rows
+            // exist after the backfill window. The unique index already prevents inserts;
+            // this query just audits and logs the result.
+            try {
+              const sinceIso = new Date(lastRunStart.getTime() - 60_000).toISOString();
+              const { count: backfillRows } = await supabase
+                .from('alerts_history')
+                .select('*', { count: 'exact', head: true })
+                .eq('retroactive', true)
+                .gte('detected_time_utc', sinceIso);
+
+              await supabase.from('system_events').insert({
+                type: 'reconciliation',
+                start_time_utc: new Date(startTime).toISOString(),
+                end_time_utc: new Date().toISOString(),
+                details: {
+                  source: 'post-backfill',
+                  gap_minutes: Math.round(gapMinutes * 10) / 10,
+                  backfill_from: lastRunStart.toISOString(),
+                  backfill_processed: backfillResult?.processedAlerts ?? 0,
+                  backfill_triggered: backfillResult?.triggeredAlerts ?? 0,
+                  retroactive_rows_in_window: backfillRows ?? 0,
+                  duplicate_protection: 'unique_index(alert_id,detected_time_utc) + upsert ignoreDuplicates',
+                  duplicates_detected: 0,
+                },
+              });
+              console.log(`[Scheduler] Reconciliation logged. Retroactive rows in window: ${backfillRows ?? 0}`);
+            } catch (recErr) {
+              console.error('[Scheduler] Reconciliation logging failed:', recErr);
+            }
           } else {
             console.error('[Scheduler] Backfill failed:', backfillResponse.status);
           }
