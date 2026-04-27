@@ -573,9 +573,10 @@ serve(async (req) => {
             model_version: isBackfill ? 'v1.0-rules-backfill' : 'v1.0-rules',
           };
 
+          // Use upsert with onConflict to make backfill idempotent against unique(alert_id, detected_time_utc)
           const { error: historyError } = await supabase
             .from('alerts_history')
-            .insert(historyRecord);
+            .upsert(historyRecord, { onConflict: 'alert_id,detected_time_utc', ignoreDuplicates: true });
 
           if (historyError) {
             // P2 fix: if history insert fails, do NOT consume/deactivate the alert
