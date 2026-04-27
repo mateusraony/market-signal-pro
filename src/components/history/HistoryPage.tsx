@@ -41,12 +41,21 @@ export function HistoryPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [filterTimeframe, setFilterTimeframe] = useState<string>('all');
+  const [filterMode, setFilterMode] = useState<string>('all'); // all | realtime | retroactive
 
   const { data: history, isLoading } = useAlertsHistory({
     symbol: searchTerm || undefined,
     type: filterType !== 'all' ? filterType as AlertType : undefined,
     timeframe: filterTimeframe !== 'all' ? filterTimeframe as AlertTimeframe : undefined,
+    retroactive: filterMode === 'all' ? undefined : filterMode === 'retroactive',
   });
+
+  // Time-window stats (1h, 24h, 7d) - based on current filtered dataset
+  const now = Date.now();
+  const inWindow = (iso: string, ms: number) => now - new Date(iso).getTime() <= ms;
+  const last1h = history?.filter(h => inWindow(h.event_time_utc, 60 * 60 * 1000)).length ?? 0;
+  const last24h = history?.filter(h => inWindow(h.event_time_utc, 24 * 60 * 60 * 1000)).length ?? 0;
+  const last7d = history?.filter(h => inWindow(h.event_time_utc, 7 * 24 * 60 * 60 * 1000)).length ?? 0;
 
   const getDirectionIcon = (direction: string | null) => {
     if (direction === 'up') return <TrendingUp className="w-4 h-4 text-success" />;
