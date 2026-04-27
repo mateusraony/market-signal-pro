@@ -61,8 +61,6 @@ serve(async (req) => {
             // this query just audits and logs the result.
             try {
               const sinceIso = new Date(lastRunStart.getTime() - 60_000).toISOString();
-              const { data: dupCheck } = await supabase.rpc('exec' as never, {} as never).catch(() => ({ data: null } as { data: null }));
-              // Fallback: do a simple count query of recent backfill rows
               const { count: backfillRows } = await supabase
                 .from('alerts_history')
                 .select('*', { count: 'exact', head: true })
