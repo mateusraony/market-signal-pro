@@ -9,6 +9,7 @@ import { useState, useEffect } from 'react';
 import { SystemStatus } from './SystemStatus';
 import { SchedulerHistory } from './SchedulerHistory';
 import { SchedulerLatencyChart } from './SchedulerLatencyChart';
+import { SchedulerGaps } from './SchedulerGaps';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
