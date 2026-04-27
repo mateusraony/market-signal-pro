@@ -103,6 +103,28 @@ export function HistoryPage() {
         </Button>
       </div>
 
+      {/* Time-window stats */}
+      <div className="grid grid-cols-3 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-sm text-muted-foreground">Últimas 1h</p>
+            <p className="text-2xl font-bold font-mono text-primary">{last1h}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-sm text-muted-foreground">Últimas 24h</p>
+            <p className="text-2xl font-bold font-mono text-primary">{last24h}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-sm text-muted-foreground">Últimos 7d</p>
+            <p className="text-2xl font-bold font-mono text-primary">{last7d}</p>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
