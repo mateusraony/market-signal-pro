@@ -24,9 +24,11 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Bell, Search, Filter, Plus, Loader2, PauseCircle, PlayCircle } from 'lucide-react';
 import { useState } from 'react';
+import { AutoRefreshToggle } from '@/components/common/AutoRefreshToggle';
 
 export function AlertsPage() {
-  const { alerts, isLoading, togglePause, deleteAlert, reactivateAlert, pauseAll, resumeAll } = useAlerts();
+  const [refreshMs, setRefreshMs] = useState<number | false>(false);
+  const { alerts, isLoading, togglePause, deleteAlert, reactivateAlert, pauseAll, resumeAll } = useAlerts(refreshMs);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
