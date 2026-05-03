@@ -11,9 +11,11 @@ interface HistoryFilters {
   retroactive?: boolean;
 }
 
-export function useAlertsHistory(filters?: HistoryFilters) {
+export function useAlertsHistory(filters?: HistoryFilters, refetchIntervalMs?: number | false) {
   return useQuery({
     queryKey: ['alerts-history', filters],
+    refetchInterval: refetchIntervalMs ?? false,
+    refetchIntervalInBackground: false,
     queryFn: async () => {
       let query = supabase
         .from('alerts_history')
