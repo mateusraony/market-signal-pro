@@ -280,6 +280,12 @@
     50% { transform: translate(60px, -90px) scale(1.05); }
   }
 
+  /* Aurora theme disabled state */
+  .aurora-off .aurora-blob,
+  .aurora-off .bg-grid-overlay {
+    display: none !important;
+  }
+
   .bg-grid-overlay {
     background-image:
       linear-gradient(hsl(var(--foreground) / 0.6) 1px, transparent 1px),
