@@ -78,6 +78,30 @@ export function DashboardLayout({
           </div>
 
           <div className="flex items-center gap-2">
+            <TooltipProvider delayDuration={200}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={toggleAurora}
+                    aria-pressed={auroraEnabled}
+                    className={cn(
+                      'rounded-full transition-all',
+                      auroraEnabled
+                        ? 'text-primary hover:bg-primary/10 shadow-[0_0_15px_hsl(var(--primary)/0.25)]'
+                        : 'text-muted-foreground hover:text-foreground'
+                    )}
+                  >
+                    <Sparkles className={cn('w-4 h-4', !auroraEnabled && 'opacity-60')} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {auroraEnabled ? 'Aurora: ligado' : 'Aurora: desligado'}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
             <Button
               variant="outline"
               size="sm"
