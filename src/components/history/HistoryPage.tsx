@@ -42,13 +42,14 @@ export function HistoryPage() {
   const [filterType, setFilterType] = useState<string>('all');
   const [filterTimeframe, setFilterTimeframe] = useState<string>('all');
   const [filterMode, setFilterMode] = useState<string>('all'); // all | realtime | retroactive
+  const [refreshMs, setRefreshMs] = useState<number | false>(false);
 
   const { data: history, isLoading } = useAlertsHistory({
     symbol: searchTerm || undefined,
     type: filterType !== 'all' ? filterType as AlertType : undefined,
     timeframe: filterTimeframe !== 'all' ? filterTimeframe as AlertTimeframe : undefined,
     retroactive: filterMode === 'all' ? undefined : filterMode === 'retroactive',
-  });
+  }, refreshMs);
 
   // Time-window stats (1h, 24h, 7d) - based on current filtered dataset
   const now = Date.now();
