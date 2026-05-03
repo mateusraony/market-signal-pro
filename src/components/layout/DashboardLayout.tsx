@@ -9,9 +9,11 @@ import {
   PlayCircle,
   BarChart3,
   LogOut,
+  Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAuroraTheme } from '@/hooks/useAuroraTheme';
 import {
   Tooltip,
   TooltipContent,
