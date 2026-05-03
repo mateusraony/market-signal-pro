@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { AutoRefreshToggle } from '@/components/common/AutoRefreshToggle';
 
 export function HistoryPage() {
   const [searchTerm, setSearchTerm] = useState('');
