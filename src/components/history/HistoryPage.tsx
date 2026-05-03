@@ -36,19 +36,21 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { AutoRefreshToggle } from '@/components/common/AutoRefreshToggle';
 
 export function HistoryPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [filterTimeframe, setFilterTimeframe] = useState<string>('all');
   const [filterMode, setFilterMode] = useState<string>('all'); // all | realtime | retroactive
+  const [refreshMs, setRefreshMs] = useState<number | false>(false);
 
   const { data: history, isLoading } = useAlertsHistory({
     symbol: searchTerm || undefined,
     type: filterType !== 'all' ? filterType as AlertType : undefined,
     timeframe: filterTimeframe !== 'all' ? filterTimeframe as AlertTimeframe : undefined,
     retroactive: filterMode === 'all' ? undefined : filterMode === 'retroactive',
-  });
+  }, refreshMs);
 
   // Time-window stats (1h, 24h, 7d) - based on current filtered dataset
   const now = Date.now();
@@ -93,14 +95,17 @@ export function HistoryPage() {
             Visualize todos os alertas disparados
           </p>
         </div>
-        <Button 
-          variant="outline" 
-          onClick={handleExportCSV}
-          disabled={!history || history.length === 0}
-        >
-          <Download className="w-4 h-4 mr-2" />
-          Exportar CSV
-        </Button>
+        <div className="flex flex-wrap gap-2 items-center">
+          <AutoRefreshToggle storageKey="history-autorefresh" onChange={setRefreshMs} />
+          <Button 
+            variant="outline" 
+            onClick={handleExportCSV}
+            disabled={!history || history.length === 0}
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Exportar CSV
+          </Button>
+        </div>
       </div>
 
       {/* Time-window stats */}

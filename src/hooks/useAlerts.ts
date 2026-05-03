@@ -11,13 +11,15 @@ function getOwnerId(userId?: string) {
   return userId ?? PUBLIC_USER_ID;
 }
 
-export function useAlerts() {
+export function useAlerts(refetchIntervalMs?: number | false) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const ownerId = getOwnerId(user?.id);
 
   const alertsQuery = useQuery({
     queryKey: ['alerts', ownerId],
+    refetchInterval: refetchIntervalMs ?? false,
+    refetchIntervalInBackground: false,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('alerts')
