@@ -97,7 +97,8 @@ export function AlertsPage() {
             Gerencie seus alertas de preço, RSI, MACD e Volume
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2 items-center">
+          <AutoRefreshToggle storageKey="alerts-autorefresh" onChange={setRefreshMs} />
           {activeCount > 0 && (
             <Button 
               variant="outline" 
