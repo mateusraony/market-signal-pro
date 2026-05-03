@@ -95,14 +95,17 @@ export function HistoryPage() {
             Visualize todos os alertas disparados
           </p>
         </div>
-        <Button 
-          variant="outline" 
-          onClick={handleExportCSV}
-          disabled={!history || history.length === 0}
-        >
-          <Download className="w-4 h-4 mr-2" />
-          Exportar CSV
-        </Button>
+        <div className="flex flex-wrap gap-2 items-center">
+          <AutoRefreshToggle storageKey="history-autorefresh" onChange={setRefreshMs} />
+          <Button 
+            variant="outline" 
+            onClick={handleExportCSV}
+            disabled={!history || history.length === 0}
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Exportar CSV
+          </Button>
+        </div>
       </div>
 
       {/* Time-window stats */}
