@@ -1,19 +1,23 @@
 import { ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
-import { 
-  Activity, 
-  Bell, 
-  History, 
-  Settings, 
+import {
+  Activity,
+  Bell,
+  History,
+  Settings,
   PauseCircle,
   PlayCircle,
-  Menu,
   BarChart3,
-  LogOut
+  LogOut,
 } from 'lucide-react';
-import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -24,149 +28,167 @@ interface DashboardLayoutProps {
   isPanicMode?: boolean;
 }
 
-export function DashboardLayout({ 
-  children, 
-  currentPage, 
+export function DashboardLayout({
+  children,
+  currentPage,
   onPageChange,
   onPauseAll,
   onResumeAll,
-  isPanicMode = false
+  isPanicMode = false,
 }: DashboardLayoutProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, signOut } = useAuth();
+
   const navItems = [
     { id: 'dashboard' as const, label: 'Dashboard', icon: BarChart3 },
     { id: 'alerts' as const, label: 'Alertas', icon: Bell },
     { id: 'history' as const, label: 'Histórico', icon: History },
-    { id: 'settings' as const, label: 'Configurações', icon: Settings },
+    { id: 'settings' as const, label: 'Config', icon: Settings },
   ];
 
   return (
-    <div className="min-h-screen bg-background flex">
-      {/* Mobile sidebar backdrop */}
-      {sidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+    <div className="relative min-h-screen bg-background text-foreground overflow-x-hidden">
+      {/* Aurora animated background */}
+      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        <div className="aurora-blob aurora-blob-1" />
+        <div className="aurora-blob aurora-blob-2" />
+        <div className="aurora-blob aurora-blob-3" />
+        <div className="absolute inset-0 bg-grid-overlay opacity-[0.04]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/0 via-background/40 to-background/90" />
+      </div>
 
-      {/* Sidebar */}
-      <aside className={cn(
-        "fixed inset-y-0 left-0 z-50 w-64 bg-sidebar border-r border-sidebar-border transform transition-transform duration-300 lg:translate-x-0 lg:static",
-        sidebarOpen ? "translate-x-0" : "-translate-x-full"
-      )}>
-        <div className="flex flex-col h-full">
-          {/* Logo */}
-          <div className="p-6 border-b border-sidebar-border">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
-                <Activity className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <h1 className="font-bold text-lg text-sidebar-foreground font-mono">AlertStation</h1>
-                <p className="text-xs text-muted-foreground">Sistema de Alertas</p>
-              </div>
+      {/* Top navigation */}
+      <header className="sticky top-0 z-40 backdrop-blur-xl bg-background/40 border-b border-border/40">
+        <div className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 py-3">
+          <div className="flex items-center gap-3 animate-fade-in">
+            <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-primary/30 to-primary/5 border border-primary/30 flex items-center justify-center shadow-[0_0_20px_hsl(var(--primary)/0.25)]">
+              <Activity className="w-4 h-4 text-primary" />
+              <span className="absolute inset-0 rounded-xl border border-primary/40 animate-ping opacity-20" />
+            </div>
+            <div className="leading-tight">
+              <h1 className="font-semibold text-base tracking-tight">
+                Alert<span className="text-gradient-primary">Station</span>
+              </h1>
+              <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                Market intelligence
+              </p>
             </div>
           </div>
 
-          {/* Navigation */}
-          <nav className="flex-1 p-4 space-y-2">
-            {navItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => {
-                  onPageChange(item.id);
-                  setSidebarOpen(false);
-                }}
-                className={cn(
-                  "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200",
-                  currentPage === item.id
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-                )}
-              >
-                <item.icon className="w-5 h-5" />
-                <span className="font-medium">{item.label}</span>
-              </button>
-            ))}
-          </nav>
-
-          {/* Kill Switch */}
-          <div className="p-4 border-t border-sidebar-border space-y-2">
-            <p className="text-xs text-muted-foreground px-2 mb-2">Kill Switch</p>
+          <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
               className={cn(
-                "w-full justify-start gap-2",
-                isPanicMode && "border-destructive text-destructive"
+                'hidden sm:inline-flex gap-2 rounded-full border-border/60 bg-background/40 backdrop-blur transition-all hover:border-primary/50 hover:shadow-[0_0_15px_hsl(var(--primary)/0.2)]',
+                isPanicMode && 'border-destructive/60 text-destructive hover:border-destructive'
               )}
               onClick={isPanicMode ? onResumeAll : onPauseAll}
             >
               {isPanicMode ? (
                 <>
-                  <PlayCircle className="w-4 h-4" />
-                  Reativar Todos
+                  <PlayCircle className="w-4 h-4" /> Reativar
                 </>
               ) : (
                 <>
-                  <PauseCircle className="w-4 h-4" />
-                  Pausar Todos
+                  <PauseCircle className="w-4 h-4" /> Pausar todos
                 </>
               )}
             </Button>
-          </div>
 
-          {/* User & Logout */}
-          <div className="p-4 border-t border-sidebar-border space-y-2">
             {user && (
-              <p className="text-xs text-muted-foreground truncate px-2 mb-2">
+              <span className="hidden md:inline text-xs text-muted-foreground max-w-[180px] truncate">
                 {user.email}
-              </p>
+              </span>
             )}
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full justify-start gap-2"
-              onClick={signOut}
-            >
-              <LogOut className="w-4 h-4" />
-              Sair
-            </Button>
-          </div>
 
-          {/* Footer */}
-          <div className="p-4 border-t border-sidebar-border">
-            <p className="text-xs text-muted-foreground text-center">
-              Horários em BRT (UTC-3)
-            </p>
+            <TooltipProvider delayDuration={200}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={signOut}
+                    className="rounded-full hover:bg-destructive/10 hover:text-destructive"
+                  >
+                    <LogOut className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Sair</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </div>
-      </aside>
+      </header>
 
-      {/* Main content */}
-      <main className="flex-1 flex flex-col min-w-0">
-        {/* Mobile header */}
-        <header className="lg:hidden flex items-center justify-between p-4 border-b border-border bg-card/50">
-          <button 
-            onClick={() => setSidebarOpen(true)}
-            className="p-2 rounded-lg hover:bg-muted"
-          >
-            <Menu className="w-5 h-5" />
-          </button>
-          <div className="flex items-center gap-2">
-            <Activity className="w-5 h-5 text-primary" />
-            <span className="font-bold font-mono">AlertStation</span>
-          </div>
-          <div className="w-9" /> {/* Spacer */}
-        </header>
-
-        {/* Page content */}
-        <div className="flex-1 overflow-auto p-4 lg:p-8">
-          {children}
-        </div>
+      {/* Page content */}
+      <main className="relative max-w-7xl mx-auto px-4 sm:px-6 py-6 pb-32 animate-fade-in">
+        {children}
       </main>
+
+      {/* Bottom dock */}
+      <nav
+        aria-label="Navegação principal"
+        className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 px-2"
+      >
+        <div className="relative flex items-end gap-1 px-2 py-2 rounded-2xl border border-border/60 bg-background/60 backdrop-blur-2xl shadow-[0_10px_40px_-10px_hsl(var(--primary)/0.35)]">
+          <div className="absolute -inset-px rounded-2xl bg-gradient-to-r from-primary/20 via-transparent to-primary/20 opacity-50 -z-10 blur-md" />
+          {navItems.map((item) => {
+            const active = currentPage === item.id;
+            return (
+              <TooltipProvider key={item.id} delayDuration={150}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => onPageChange(item.id)}
+                      className={cn(
+                        'group relative flex flex-col items-center justify-center gap-0.5 rounded-xl px-3 sm:px-4 py-2 transition-all duration-300',
+                        'hover:-translate-y-0.5',
+                        active
+                          ? 'text-primary'
+                          : 'text-muted-foreground hover:text-foreground'
+                      )}
+                    >
+                      {active && (
+                        <span className="absolute inset-0 rounded-xl bg-primary/10 border border-primary/30 shadow-[0_0_20px_hsl(var(--primary)/0.35)] animate-fade-in" />
+                      )}
+                      <item.icon className="relative w-5 h-5 transition-transform duration-300 group-hover:scale-110" />
+                      <span className="relative text-[10px] font-medium tracking-wide">
+                        {item.label}
+                      </span>
+                      {active && (
+                        <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary shadow-[0_0_8px_hsl(var(--primary))]" />
+                      )}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">{item.label}</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            );
+          })}
+
+          {/* Mobile pause toggle inside dock */}
+          <div className="sm:hidden border-l border-border/60 ml-1 pl-1">
+            <button
+              onClick={isPanicMode ? onResumeAll : onPauseAll}
+              className={cn(
+                'flex flex-col items-center justify-center gap-0.5 rounded-xl px-3 py-2 transition-colors',
+                isPanicMode
+                  ? 'text-destructive'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              {isPanicMode ? (
+                <PlayCircle className="w-5 h-5" />
+              ) : (
+                <PauseCircle className="w-5 h-5" />
+              )}
+              <span className="text-[10px] font-medium">
+                {isPanicMode ? 'Reativar' : 'Pausar'}
+              </span>
+            </button>
+          </div>
+        </div>
+      </nav>
     </div>
   );
 }
