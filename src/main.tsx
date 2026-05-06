@@ -5,8 +5,7 @@ import { installGlobalErrorHandlers } from "./lib/errorLogger";
 
 installGlobalErrorHandlers();
 
-// Aurora theme is always enabled
-document.documentElement.classList.remove("aurora-off");
+// Aurora theme is permanently enabled
 document.documentElement.setAttribute("data-aurora", "on");
 try { localStorage.removeItem("aurora-theme-enabled"); } catch {}
 
