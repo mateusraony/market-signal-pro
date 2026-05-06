@@ -9,7 +9,11 @@ installGlobalErrorHandlers();
 try {
   const stored = localStorage.getItem("aurora-theme-enabled");
   const enabled = stored === null ? true : stored === "true";
-  if (!enabled) document.documentElement.classList.add("aurora-off");
-} catch {}
+  const root = document.documentElement;
+  root.classList.toggle("aurora-off", !enabled);
+  root.setAttribute("data-aurora", enabled ? "on" : "off");
+} catch {
+  document.documentElement.setAttribute("data-aurora", "on");
+}
 
 createRoot(document.getElementById("root")!).render(<App />);
