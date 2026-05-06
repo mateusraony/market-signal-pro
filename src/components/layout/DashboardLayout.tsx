@@ -37,7 +37,7 @@ export function DashboardLayout({
   isPanicMode = false,
 }: DashboardLayoutProps) {
   const { user, signOut } = useAuth();
-  const { enabled: auroraEnabled, toggle: toggleAurora } = useAuroraTheme();
+  
 
   const navItems = [
     { id: 'dashboard' as const, label: 'Dashboard', icon: BarChart3 },
