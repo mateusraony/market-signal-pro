@@ -28,24 +28,9 @@
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
 
-    <!-- Aurora theme: apply preference before first paint to avoid flash (SSR/prerender safe) -->
     <script>
-      (function () {
-        try {
-          var stored = null;
-          try { stored = window.localStorage.getItem('aurora-theme-enabled'); } catch (e) {}
-          var enabled = stored === null ? true : stored === 'true';
-          var root = document.documentElement;
-          if (!enabled) root.classList.add('aurora-off');
-          root.setAttribute('data-aurora', enabled ? 'on' : 'off');
-        } catch (e) {}
-      })();
+      document.documentElement.setAttribute('data-aurora', 'on');
     </script>
-    <style>
-      /* Hide aurora visuals until JS confirms the preference (prevents 1-frame flash) */
-      html:not([data-aurora]) .aurora-blob,
-      html:not([data-aurora]) .bg-grid-overlay { display: none !important; }
-    </style>
   </head>
 
   <body>
