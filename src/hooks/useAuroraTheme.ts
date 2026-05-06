@@ -4,7 +4,9 @@ const STORAGE_KEY = 'aurora-theme-enabled';
 
 function applyToDom(enabled: boolean) {
   if (typeof document === 'undefined') return;
-  document.documentElement.classList.toggle('aurora-off', !enabled);
+  const root = document.documentElement;
+  root.classList.toggle('aurora-off', !enabled);
+  root.setAttribute('data-aurora', enabled ? 'on' : 'off');
 }
 
 export function useAuroraTheme() {
