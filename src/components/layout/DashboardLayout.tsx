@@ -85,15 +85,25 @@ export function DashboardLayout({
                     variant="ghost"
                     size="icon"
                     onClick={toggleAurora}
-                    aria-pressed={auroraEnabled}
+                    role="switch"
+                    aria-checked={auroraEnabled}
+                    aria-label={
+                      auroraEnabled
+                        ? 'Desativar tema Aurora (animações de fundo)'
+                        : 'Ativar tema Aurora (animações de fundo)'
+                    }
                     className={cn(
                       'rounded-full transition-all',
+                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
                       auroraEnabled
                         ? 'text-primary hover:bg-primary/10 shadow-[0_0_15px_hsl(var(--primary)/0.25)]'
                         : 'text-muted-foreground hover:text-foreground'
                     )}
                   >
-                    <Sparkles className={cn('w-4 h-4', !auroraEnabled && 'opacity-60')} />
+                    <Sparkles aria-hidden="true" className={cn('w-4 h-4', !auroraEnabled && 'opacity-60')} />
+                    <span className="sr-only">
+                      Tema Aurora {auroraEnabled ? 'ligado' : 'desligado'}
+                    </span>
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
