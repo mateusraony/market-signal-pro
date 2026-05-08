@@ -19,7 +19,7 @@ export default function Auth() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center px-4">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
@@ -85,8 +85,8 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <Card className="w-full max-w-md border-border/50">
+    <div className="flex min-h-screen items-center justify-center px-4 py-10">
+      <Card className="glass-card w-full max-w-md border-border/50 bg-card/70">
         <CardHeader className="text-center space-y-4">
           <div className="mx-auto w-14 h-14 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
             <Activity className="w-7 h-7 text-primary" />
