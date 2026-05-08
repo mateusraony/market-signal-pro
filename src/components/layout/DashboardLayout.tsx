@@ -47,16 +47,7 @@ export function DashboardLayout({
   ];
 
   return (
-    <div className="relative min-h-screen bg-background text-foreground overflow-x-hidden">
-      {/* Aurora animated background */}
-      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-        <div className="aurora-blob aurora-blob-1" />
-        <div className="aurora-blob aurora-blob-2" />
-        <div className="aurora-blob aurora-blob-3" />
-        <div className="absolute inset-0 bg-grid-overlay opacity-[0.04]" />
-        <div className="absolute inset-0 bg-gradient-to-b from-background/0 via-background/40 to-background/90" />
-      </div>
-
+    <div className="relative min-h-screen overflow-x-hidden text-foreground">
       {/* Top navigation */}
       <header className="sticky top-0 z-40 backdrop-blur-xl bg-background/40 border-b border-border/40">
         <div className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 py-3">
