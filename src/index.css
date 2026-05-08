@@ -110,6 +110,7 @@
       radial-gradient(circle at 52% 86%, hsl(320 75% 58% / 0.16), transparent 32%),
       linear-gradient(180deg, hsl(var(--background)), hsl(222 47% 4%));
     background-attachment: fixed;
+    animation: aurora-background-drift 24s ease-in-out infinite alternate;
   }
 
   body::after {
@@ -131,6 +132,21 @@
     min-height: 100vh;
     position: relative;
     isolation: isolate;
+  }
+
+  @keyframes aurora-background-drift {
+    0% {
+      transform: translate3d(0, 0, 0) scale(1);
+      filter: saturate(1);
+    }
+    50% {
+      transform: translate3d(0, -1.5%, 0) scale(1.03);
+      filter: saturate(1.08);
+    }
+    100% {
+      transform: translate3d(0, 1.5%, 0) scale(1.05);
+      filter: saturate(1.12);
+    }
   }
 
   /* Custom scrollbar */
