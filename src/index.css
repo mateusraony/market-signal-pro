@@ -98,6 +98,57 @@
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -3;
+    pointer-events: none;
+    background:
+      radial-gradient(circle at 12% 18%, hsl(185 84% 50% / 0.22), transparent 28%),
+      radial-gradient(circle at 88% 22%, hsl(265 80% 60% / 0.18), transparent 30%),
+      radial-gradient(circle at 52% 86%, hsl(320 75% 58% / 0.16), transparent 32%),
+      linear-gradient(180deg, hsl(var(--background)), hsl(222 47% 4%));
+    background-attachment: fixed;
+    animation: aurora-background-drift 24s ease-in-out infinite alternate;
+  }
+
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    pointer-events: none;
+    opacity: 0.06;
+    background-image:
+      linear-gradient(hsl(var(--foreground) / 0.7) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--foreground) / 0.7) 1px, transparent 1px);
+    background-size: 48px 48px;
+    background-attachment: fixed;
+    mask-image: linear-gradient(to bottom, transparent, black 12%, black 88%, transparent);
+  }
+
+  #root {
+    min-height: 100vh;
+    position: relative;
+    isolation: isolate;
+  }
+
+  @keyframes aurora-background-drift {
+    0% {
+      transform: translate3d(0, 0, 0) scale(1);
+      filter: saturate(1);
+    }
+    50% {
+      transform: translate3d(0, -1.5%, 0) scale(1.03);
+      filter: saturate(1.08);
+    }
+    100% {
+      transform: translate3d(0, 1.5%, 0) scale(1.05);
+      filter: saturate(1.12);
+    }
+  }
+
   /* Custom scrollbar */
   ::-webkit-scrollbar {
     width: 8px;
@@ -248,6 +299,7 @@
     filter: blur(90px);
     opacity: 0.45;
     will-change: transform;
+    mix-blend-mode: screen;
   }
   .aurora-blob-1 {
     width: 520px; height: 520px;
@@ -291,6 +343,22 @@
   .glass-card {
     @apply rounded-2xl border border-border/50 bg-card/50 backdrop-blur-xl;
     box-shadow: 0 10px 40px -20px hsl(222 47% 2% / 0.6), inset 0 1px 0 hsl(var(--foreground) / 0.04);
+  }
+
+  .aurora-shell {
+    position: relative;
+    min-height: 100vh;
+    overflow-x: clip;
+    background: transparent;
+  }
+
+  .aurora-shell::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: linear-gradient(180deg, hsl(var(--background) / 0.2), hsl(var(--background) / 0.72) 58%, hsl(var(--background) / 0.9));
   }
 
   /* Gradient outline card (animated border) */
