@@ -48,12 +48,6 @@ export function DashboardLayout({
 
   return (
     <div className="aurora-shell text-foreground">
-      <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-        <div className="aurora-blob aurora-blob-1" />
-        <div className="aurora-blob aurora-blob-2" />
-        <div className="aurora-blob aurora-blob-3" />
-      </div>
-
       {/* Top navigation */}
       <header className="sticky top-0 z-40 backdrop-blur-xl bg-background/40 border-b border-border/40">
         <div className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 py-3">
