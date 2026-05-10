@@ -36,9 +36,6 @@ export function AlertsPage() {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [editingAlert, setEditingAlert] = useState<Alert | null>(null);
   const [deletingAlertId, setDeletingAlertId] = useState<string | null>(null);
-  const livePrices = useLivePrices(
-    filteredAlerts.map((alert) => ({ symbol: alert.symbol, exchange: alert.exchange }))
-  );
 
   const now = Date.now();
   const isTriggered = (alert: Alert) => {
@@ -59,6 +56,10 @@ export function AlertsPage() {
       (filterStatus === 'triggered' && triggered);
     return matchesSearch && matchesType && matchesStatus;
   });
+
+  const livePrices = useLivePrices(
+    filteredAlerts.map((alert) => ({ symbol: alert.symbol, exchange: alert.exchange }))
+  );
 
   const handleDelete = (id: string) => {
     ensureAuroraTheme('alert-delete-open');
