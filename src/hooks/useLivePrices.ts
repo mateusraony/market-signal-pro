@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface PriceData {
@@ -9,6 +9,8 @@ interface PriceData {
   fetchedAt?: Date;
   error?: string;
 }
+
+type PriceRequest = string | { symbol: string; exchange?: string };
 
 interface UseLivePricesReturn {
   prices: Record<string, PriceData>;
@@ -25,22 +27,28 @@ async function fetchViaProxy(action: string, params: Record<string, unknown>) {
   return data?.data ?? data;
 }
 
-export function useLivePrices(symbols: string[]): UseLivePricesReturn {
+export function useLivePrices(symbols: PriceRequest[]): UseLivePricesReturn {
   const [prices, setPrices] = useState<Record<string, PriceData>>({});
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const normalizedSymbols = useMemo(
+    () => symbols.map((item) => (typeof item === 'string' ? { symbol: item } : item)).filter((item) => item.symbol),
+    [symbols]
+  );
 
   const fetchPrices = useCallback(async () => {
-    if (symbols.length === 0) return;
+    if (normalizedSymbols.length === 0) return;
     if (typeof document !== 'undefined' && document.hidden) return;
 
     try {
-      const data = await fetchViaProxy('tickers', { symbols });
+      const data = await fetchViaProxy('tickers', { symbols: normalizedSymbols });
       const tickers = Array.isArray(data) ? data : [];
 
       const newPrices: Record<string, PriceData> = {};
       for (const ticker of tickers) {
-        newPrices[ticker.symbol] = {
+        const exchange = typeof ticker.exchange === 'string' ? ticker.exchange.toLowerCase() : undefined;
+        const key = exchange ? `${ticker.symbol}:${exchange}` : ticker.symbol;
+        newPrices[key] = {
           symbol: ticker.symbol,
           price: parseFloat(ticker.lastPrice),
           change24h: parseFloat(ticker.priceChangePercent),
@@ -56,7 +64,7 @@ export function useLivePrices(symbols: string[]): UseLivePricesReturn {
       setError(err instanceof Error ? err.message : 'Unknown error');
       setIsConnected(false);
     }
-  }, [symbols]);
+  }, [normalizedSymbols]);
 
   useEffect(() => {
     fetchPrices();
