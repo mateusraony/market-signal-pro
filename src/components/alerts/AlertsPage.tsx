@@ -25,6 +25,8 @@ import {
 import { Bell, Search, Filter, Plus, Loader2, PauseCircle, PlayCircle } from 'lucide-react';
 import { useState } from 'react';
 import { AutoRefreshToggle } from '@/components/common/AutoRefreshToggle';
+import { useLivePrices } from '@/hooks/useLivePrices';
+import { ensureAuroraTheme, reportAuroraThemeOrigin } from '@/lib/auroraTheme';
 
 export function AlertsPage() {
   const [refreshMs, setRefreshMs] = useState<number | false>(false);
@@ -34,6 +36,9 @@ export function AlertsPage() {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [editingAlert, setEditingAlert] = useState<Alert | null>(null);
   const [deletingAlertId, setDeletingAlertId] = useState<string | null>(null);
+  const livePrices = useLivePrices(
+    filteredAlerts.map((alert) => ({ symbol: alert.symbol, exchange: alert.exchange }))
+  );
 
   const now = Date.now();
   const isTriggered = (alert: Alert) => {
@@ -56,17 +61,23 @@ export function AlertsPage() {
   });
 
   const handleDelete = (id: string) => {
+    ensureAuroraTheme('alert-delete-open');
+    reportAuroraThemeOrigin('alert-delete-open', { alertId: id });
     setDeletingAlertId(id);
   };
 
   const confirmDelete = () => {
     if (deletingAlertId) {
+      ensureAuroraTheme('alert-delete-confirm');
+      reportAuroraThemeOrigin('alert-delete-confirm', { alertId: deletingAlertId });
       deleteAlert.mutate(deletingAlertId);
       setDeletingAlertId(null);
     }
   };
 
   const handleEdit = (alert: Alert) => {
+    ensureAuroraTheme('alert-edit-open');
+    reportAuroraThemeOrigin('alert-edit-open', { alertId: alert.id, symbol: alert.symbol });
     setEditingAlert(alert);
   };
 
@@ -213,10 +224,19 @@ export function AlertsPage() {
             <AlertCard
               key={alert.id}
               alert={alert}
-              onTogglePause={(id, paused) => togglePause.mutate({ id, paused })}
+              livePrice={livePrices.prices[`${alert.symbol}:${alert.exchange}`] ?? livePrices.prices[alert.symbol] ?? null}
+              onTogglePause={(id, paused) => {
+                ensureAuroraTheme('alert-toggle-pause');
+                reportAuroraThemeOrigin('alert-toggle-pause', { alertId: id, paused });
+                togglePause.mutate({ id, paused });
+              }}
               onDelete={handleDelete}
               onEdit={handleEdit}
-              onReactivate={(id) => reactivateAlert.mutate(id)}
+              onReactivate={(id) => {
+                ensureAuroraTheme('alert-reactivate');
+                reportAuroraThemeOrigin('alert-reactivate', { alertId: id });
+                reactivateAlert.mutate(id);
+              }}
             />
           ))}
         </div>
