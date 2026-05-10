@@ -31,9 +31,12 @@ export function useLivePrices(symbols: PriceRequest[]): UseLivePricesReturn {
   const [prices, setPrices] = useState<Record<string, PriceData>>({});
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const symbolSignature = JSON.stringify(
+    symbols.map((item) => (typeof item === 'string' ? { symbol: item } : { symbol: item.symbol, exchange: item.exchange }))
+  );
   const normalizedSymbols = useMemo(
     () => symbols.map((item) => (typeof item === 'string' ? { symbol: item } : item)).filter((item) => item.symbol),
-    [symbols]
+    [symbolSignature]
   );
 
   const fetchPrices = useCallback(async () => {
