@@ -4,6 +4,7 @@ import { Alert, AlertType, AlertTimeframe, TriggerMode, AlertParams } from '@/ty
 import { toast } from 'sonner';
 import { Json } from '@/integrations/supabase/types';
 import { useAuth } from '@/contexts/AuthContext';
+import { ensureAuroraTheme, reportAuroraThemeOrigin } from '@/lib/auroraTheme';
 
 const PUBLIC_USER_ID = '00000000-0000-0000-0000-000000000000';
 
@@ -44,6 +45,8 @@ export function useAlerts(refetchIntervalMs?: number | false) {
       params: AlertParams;
       mode: TriggerMode;
     }) => {
+      ensureAuroraTheme('alert-create');
+      reportAuroraThemeOrigin('alert-create', { symbol: alert.symbol, exchange: alert.exchange, type: alert.type });
       const { data, error } = await supabase
         .from('alerts')
         .insert({
@@ -72,6 +75,8 @@ export function useAlerts(refetchIntervalMs?: number | false) {
 
   const updateAlert = useMutation({
     mutationFn: async ({ id, params, ...updates }: Partial<Alert> & { id: string }) => {
+      ensureAuroraTheme('alert-update');
+      reportAuroraThemeOrigin('alert-update', { id, updates: Object.keys(updates), hasParams: !!params });
       const updateData: Record<string, unknown> = { ...updates };
       if (params) {
         updateData.params = params as unknown as Json;
@@ -116,6 +121,8 @@ export function useAlerts(refetchIntervalMs?: number | false) {
 
   const togglePause = useMutation({
     mutationFn: async ({ id, paused }: { id: string; paused: boolean }) => {
+      ensureAuroraTheme('alert-toggle-pause');
+      reportAuroraThemeOrigin('alert-toggle-pause', { id, paused });
       const { error } = await supabase
         .from('alerts')
         .update({ paused })
@@ -134,6 +141,8 @@ export function useAlerts(refetchIntervalMs?: number | false) {
 
   const reactivateAlert = useMutation({
     mutationFn: async (id: string) => {
+      ensureAuroraTheme('alert-reactivate');
+      reportAuroraThemeOrigin('alert-reactivate', { id });
       const { error } = await supabase
         .from('alerts')
         .update({ active: true, paused: false, cooldown_until: null, last_trigger_candle_open_time: null })

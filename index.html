@@ -29,7 +29,28 @@
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
 
     <script>
-      document.documentElement.setAttribute('data-aurora', 'on');
+      (function () {
+        function ensureAuroraTheme(reason) {
+          var html = document.documentElement;
+          var body = document.body;
+          html.setAttribute('data-aurora', 'on');
+          html.classList.remove('aurora-off');
+          html.style.colorScheme = 'dark';
+          if (body) {
+            body.setAttribute('data-aurora', 'on');
+            body.classList.remove('aurora-off');
+            body.style.colorScheme = 'dark';
+          }
+          window.__lastAuroraReason = reason || 'bootstrap';
+        }
+
+        window.__ensureAuroraTheme = ensureAuroraTheme;
+        ensureAuroraTheme('bootstrap-head');
+
+        document.addEventListener('DOMContentLoaded', function () {
+          ensureAuroraTheme('dom-content-loaded');
+        }, { once: true });
+      })();
     </script>
   </head>
 

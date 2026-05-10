@@ -23,18 +23,24 @@ import {
   RotateCcw
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useLivePrice } from '@/hooks/useLivePrices';
+
+interface LivePriceData {
+  price: number;
+  change24h: number;
+  lastUpdate: Date;
+  error?: string;
+}
 
 interface AlertCardProps {
   alert: Alert;
+  livePrice?: LivePriceData | null;
   onTogglePause: (id: string, paused: boolean) => void;
   onDelete: (id: string) => void;
   onEdit: (alert: Alert) => void;
   onReactivate: (id: string) => void;
 }
 
-export function AlertCard({ alert, onTogglePause, onDelete, onEdit, onReactivate }: AlertCardProps) {
-  const livePrice = useLivePrice(alert.symbol);
+export function AlertCard({ alert, livePrice, onTogglePause, onDelete, onEdit, onReactivate }: AlertCardProps) {
 
   const getTypeIcon = () => {
     switch (alert.type) {
