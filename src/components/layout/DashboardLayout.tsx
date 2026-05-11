@@ -47,7 +47,7 @@ export function DashboardLayout({
   ];
 
   return (
-    <div className="aurora-shell text-foreground">
+    <div className="relative min-h-screen text-foreground">
       {/* Top navigation */}
       <header className="sticky top-0 z-40 backdrop-blur-xl bg-background/40 border-b border-border/40">
         <div className="max-w-7xl mx-auto flex items-center justify-between px-4 sm:px-6 py-3">
