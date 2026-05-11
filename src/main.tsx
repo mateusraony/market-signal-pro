@@ -8,6 +8,22 @@ installGlobalErrorHandlers();
 syncAuroraDebugPreference();
 installAuroraDebugHelpers();
 
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    registrations.forEach((registration) => {
+      registration.unregister();
+    });
+  });
+}
+
+if ("caches" in window) {
+  caches.keys().then((cacheNames) => {
+    cacheNames.forEach((cacheName) => {
+      caches.delete(cacheName);
+    });
+  });
+}
+
 // Aurora theme is permanently enabled
 ensureAuroraTheme("main-entry");
 try { localStorage.removeItem("aurora-theme-enabled"); } catch {}
