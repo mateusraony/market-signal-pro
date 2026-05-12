@@ -21,28 +21,67 @@
     
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
 
+    <style id="aurora-preboot">
+      html:not([data-aurora="on"]), html:not([data-aurora="on"]) body {
+        background: #0a1020 !important;
+        color: #e6edf7 !important;
+        color-scheme: dark !important;
+      }
+      html.aurora-off, body.aurora-off { display: none !important; }
+    </style>
     <script>
       (function () {
+        try {
+          // Purge any legacy theme flags from prior builds before first paint.
+          var legacyKeys = ['aurora-theme-enabled', 'theme', 'ui-theme', 'app-theme', 'legacy-theme'];
+          for (var i = 0; i < legacyKeys.length; i++) {
+            try { localStorage.removeItem(legacyKeys[i]); } catch (e) {}
+            try { sessionStorage.removeItem(legacyKeys[i]); } catch (e) {}
+          }
+        } catch (e) {}
+
         function ensureAuroraTheme(reason) {
           var html = document.documentElement;
           var body = document.body;
           html.setAttribute('data-aurora', 'on');
-          html.classList.remove('aurora-off');
+          html.classList.remove('aurora-off', 'legacy', 'legacy-theme', 'theme-legacy', 'light');
           html.style.colorScheme = 'dark';
           if (body) {
             body.setAttribute('data-aurora', 'on');
-            body.classList.remove('aurora-off');
+            body.classList.remove('aurora-off', 'legacy', 'legacy-theme', 'theme-legacy', 'light');
             body.style.colorScheme = 'dark';
+          }
+          var root = document.getElementById('root');
+          if (root) {
+            root.setAttribute('data-aurora', 'on');
+            root.classList.remove('aurora-off', 'legacy', 'legacy-theme', 'theme-legacy', 'light');
           }
           window.__lastAuroraReason = reason || 'bootstrap';
         }
 
         window.__ensureAuroraTheme = ensureAuroraTheme;
+        // Apply immediately on <html> before <body> exists (pre-paint).
         ensureAuroraTheme('bootstrap-head');
+
+        // Re-apply as soon as <body> is parsed.
+        var bodyApplyInterval = setInterval(function () {
+          if (document.body) {
+            ensureAuroraTheme('body-ready');
+            clearInterval(bodyApplyInterval);
+          }
+        }, 0);
 
         document.addEventListener('DOMContentLoaded', function () {
           ensureAuroraTheme('dom-content-loaded');
         }, { once: true });
+
+        window.addEventListener('pageshow', function () {
+          ensureAuroraTheme('pageshow');
+        });
+
+        window.addEventListener('popstate', function () {
+          ensureAuroraTheme('popstate');
+        });
       })();
     </script>
   </head>
